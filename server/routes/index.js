@@ -22,31 +22,87 @@ if (!String.prototype.format) {
 }
 /* ex: "{0} is dead, but {1} is alive! {0} {2}".format("ASP", "ASP.NET") */
 
+var index_path = path.join(__dirname, '..', '..', 'client', 'views', 'index.html');
+var login_path = path.join(__dirname, '..', '..', 'client', 'views', 'login.html');
 
-
+// page navigation
 router.get('/', function(req, res, next) {
-	//console.log(res);
+	console.log(req.query);
 	//res.send('haha!');
 	//console.log('GET root');
-    var index_path = path.join(__dirname, '..', '..', 'client', 'views', 'login.html');
-    if (fs.exists(index_path) == false) {
-        console.log('views/index.html does not exist !');
+    console.log('router.get(/): ready to get token: ');
+
+    var token = req.body.token || req.query.token || req.headers['x-access-token'];
+
+    if (token) {
+        console.log('router.get(/): get token, ready to verify:');
+        // verifies secret and checks exp
+        jwt.verify(token, secretString, function(err, decoded) {
+            if (err) {
+                res.redirect('/login');
+            }
+            else {
+                res.sendFile(index_path);
+            }
+        })
     }
-    console.log(index_path);
-    res.sendFile(index_path);
+    else {
+        console.log('router.get(/): No token. response login page');
+        res.redirect('/login');
+        //res.sendFile(login_path);
+    }
 });
 
+/*
+router.post('/', function (req, res) {
+    console.log('router.post(/): req.body: ' + req.body.token);
+    var token = req.body.token || req.query.token || req.headers['x-access-token'];
+    if (token) {
+        console.log('router.get(/): get token, ready to verify:');
+        // verifies secret and checks exp
+        jwt.verify(token, secretString, function(err, decoded) {
+            if (err) {
+                res.redirect('/login');
+            }
+            else {
+                res.sendFile(index_path);
+            }
+        })
+    }
+    else {
+        console.log('router.get(/): No token. response login page');
+        res.redirect('/login');
+        //res.sendFile(login_path);
+    }
+});
+*/
+
+router.get('/login', function (req, res, next) {
+    res.sendFile(login_path);
+});
+
+/* -------------------------------------------------------------------------- */
+// API area
 
 // get auth token
 router.post('/api/v1/auth', function(req, res) {
     var user_input_name = req.body.name;
     var user_input_pass = req.body.password;
-    //console.log(user_input_name);
-    //console.log(user_input_pass);
+    console.log('router.post(/api/v1/auth): post auth ~');
+    console.log('router.post(/api/v1/auth): ' + user_input_name);
+    console.log('router.post(/api/v1/auth): ' + user_input_pass);
     var name_pass_list = [];
 
     // Get a Postgres client from the connection pool
     pg.connect(connectionString, function(err, client, done) {
+        if (err) {
+            return res.json({
+                success: false,
+                message: 'DB connection failed.'
+            });
+        }
+
+        console.log('router.post(/api/v1/auth): connection success, ready to query ...');
 
         // SQL Query > Select Data
         var query = client.query('SELECT name, password FROM users;');
@@ -100,12 +156,13 @@ router.post('/api/v1/auth', function(req, res) {
 
 // protect APIs, 位置很重要, 必須在 auth 之後, 其他 API 之前, 才起到保護作用
 router.use(function(req, res, next) {
+    console.log('enter api middleware');
     // check header or url parameters or post parameters for token
     var token = req.body.token || req.query.token || req.headers['x-access-token'];
 
-    console.log('enter token');
     // decode token
     if (token) {
+        console.log('enter token');
         // verifies secret and checks exp
         jwt.verify(token, secretString, function(err, decoded) {
             if (err) {
@@ -122,6 +179,7 @@ router.use(function(req, res, next) {
         })
     }
     else {
+        console.log('no token');
         // if there is no token
         return res.status(403).send({
             success : false,
