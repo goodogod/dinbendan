@@ -5,6 +5,7 @@ var http = require('http');
 var path = require('path');
 var logger = require('morgan');
 var bodyParser = require('body-parser');
+var cookieParser = require('cookie-parser')
 
 var app = express();
 
@@ -12,7 +13,7 @@ var app = express();
 app.set('port', process.env.PORT || 3000);
 
 // views engine
-app.set('views', path.join(__dirname, 'views'));
+app.set('views', path.join(__dirname, 'client', 'views'));
 app.set('view engine', 'jade');
 
 //console.log(app.get('superSecret'));
@@ -21,6 +22,7 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(cookieParser());
 //app.use(express.methodOverride());
 //app.use(app.router);
 app.use(express.static(path.join(__dirname, 'client', 'public')));
@@ -31,7 +33,7 @@ app.use('/', routes);
 if ('development' == app.get('env')) {
     app.use(function(err, req, res, next) {
         res.status(err.status || 500);
-        res.render('error', {
+        res.sendFile(path.join(__dirname, 'client', 'views', 'error'), {
             message: err.message,
             error: err
         });

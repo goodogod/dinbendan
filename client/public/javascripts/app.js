@@ -1,10 +1,5 @@
 //var angular = require('angular');
 
-// create angular module
-angular.module('nodeParties', [])
-.controller('mainController', function ($scope, $http) {
-    //
-});
 
 // jQuery area
 $(document).ready(function() {
@@ -12,8 +7,29 @@ $(document).ready(function() {
     $.material.init();
 
     $('#calendar').fullCalendar({
+        //weekends: false // will hide Saturdays and Sundays
         // put your options and callbacks here
+        //$.get('/api/v1/parties');
     });
+});
+
+// create angular module
+angular.module('main', [])
+.controller('mainController', function ($scope, $http) {
+    var curYear;
+    var curMonth;
+    $http.get('/api/vi/parties');
+
+    // display today
+    // 0 ~ 6
+    var todayCode = new Date().getDay();
+    alert(todayCode);
+    //$scope
+
+    $scope.layoutDone = function() {
+        //alert('done !');
+        $.material.init();
+    }
 });
 
 // deprecate

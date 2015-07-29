@@ -96,7 +96,8 @@ var query = client.query(
         'party_id INTEGER REFERENCES parties(party_id),' +
         'product VARCHAR(64),' +
         'price NUMERIC(12, 2),' +
-        'create_date TIMESTAMP)'
+        'create_date TIMESTAMP),' +
+        'note VARCHAR(255)'
 );
 
 query.on('end', function() { client.end(); });

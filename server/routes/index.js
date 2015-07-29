@@ -4,9 +4,11 @@ var path = require('path');
 var pg = require('pg');
 var fs = require('fs');
 var jwt = require('jsonwebtoken'); // used to create, sign, and verify tokens
+//var session = require('express-session');
 var connectionString = require(path.join(__dirname, '../../', 'config'));
 
 var secretString = 'haha';
+
 
 // First, checks if it isn't implemented yet.
 if (!String.prototype.format) {
@@ -27,12 +29,14 @@ var login_path = path.join(__dirname, '..', '..', 'client', 'views', 'login.html
 
 // page navigation
 router.get('/', function(req, res, next) {
-	console.log(req.query);
-	//res.send('haha!');
-	//console.log('GET root');
+    //console.log(req.query);
+    //res.send('haha!');
+    //console.log('GET root');
     console.log('router.get(/): ready to get token: ');
 
-    var token = req.body.token || req.query.token || req.headers['x-access-token'];
+    //var token = req.body.token || req.query.token || req.headers['x-access-token'];
+    //var token = req.session.token;
+    var token = req.cookies ? req.cookies.token : undefined;
 
     if (token) {
         console.log('router.get(/): get token, ready to verify:');
@@ -105,7 +109,12 @@ router.post('/api/v1/auth', function(req, res) {
         console.log('router.post(/api/v1/auth): connection success, ready to query ...');
 
         // SQL Query > Select Data
-        var query = client.query('SELECT name, password FROM users;');
+        //var query = client.query('SELECT name, password FROM users;');
+        var query = client.query('SELECT users.user_id AS userID, users.name AS name, users.password AS password, (SELECT user_organization.organization_id FROM user_organization WHERE (users.user_id = user_organization.user_id)) AS organizationID, users.role AS role FROM users;');
+        /*
+        row:
+        userID, name, password, organizationID, role
+        */
 
         // Stream name_pass_list back one row at a time
         query.on('row', function(row) {
@@ -116,24 +125,26 @@ router.post('/api/v1/auth', function(req, res) {
         query.on('end', function() {
             client.end();
             //console.log(name_pass_list);
-            var name_pass_match = false;
+            var userInfo = undefined;
             for (var i = 0; i < name_pass_list.length; i++) {
                 if (name_pass_list[i].name == user_input_name && name_pass_list[i].password == user_input_pass) {
-                    name_pass_match = true;
+                    userInfo = name_pass_list[i];
                     break;
                 }
 
             }
-            if (name_pass_match) {
+            if (userInfo) {
                 // return a valid token
-                var token = jwt.sign(user_input_name, secretString, {
+                var token = jwt.sign(userInfo.name, secretString, {
                     expiresInMinutes: 1440 // expires in 24 hours
                 });
 
                 return res.json({
                     success: true,
                     message: 'Enjoy your token !',
-                    token: token
+                    token: token,
+                    userID: userInfo.userID,
+                    organizationID: userInfo.organizationID
                 });
             }
             else {
@@ -155,7 +166,7 @@ router.post('/api/v1/auth', function(req, res) {
 
 
 // protect APIs, 位置很重要, 必須在 auth 之後, 其他 API 之前, 才起到保護作用
-router.use(function(req, res, next) {
+router.use('/api', function(req, res, next) {
     console.log('enter api middleware');
     // check header or url parameters or post parameters for token
     var token = req.body.token || req.query.token || req.headers['x-access-token'];
@@ -311,6 +322,7 @@ router.post('/api/v1/party', function(req, res) {
 router.get('/api/v1/parties/:year/:month', function(req, res) {
     var uiYear = req.params.year;
     var uiMonth = req.params.month;
+    var queryOrganization = req.query.organization;
 
     console.log('enter parties !');
     // todo: get from user info
@@ -339,7 +351,7 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
             ' parties.name, parties.party_id, parties.creator_id, parties.store_id, users.name, stores.name, parties.create_date, parties.expired_date, parties.ready'+
             ' ORDER BY parties.party_id ASC;';
 
-        queryString = queryString.format(1, '{0}-{1}-01'.format(uiYear, uiMonth), '{0}-{1}-31'.format(uiYear, uiMonth));
+        queryString = queryString.format(queryOrganization, '{0}-{1}-01'.format(uiYear, uiMonth), '{0}-{1}-31'.format(uiYear, uiMonth));
         console.log(queryString);
         var query = client.query(queryString, function (err, results) {
             if (err) {

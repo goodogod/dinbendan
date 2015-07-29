@@ -1,3 +1,5 @@
+
+
 $(document).ready(function() {
     //alert('ready');
     //$('#login').click(function () {
@@ -12,6 +14,8 @@ $(document).ready(function() {
         };
 
         //alert(JSON.stringify(postData));
+
+
         $.ajax({
             url: '/api/v1/auth',
             type: 'POST',
@@ -26,42 +30,20 @@ $(document).ready(function() {
                 res: {
                     success: boolean,
                     message: string,
-                    token: token
+                    token: token,
+                    userID: integer,
+                    organizationID: integer
                 }
                 */
-                /*
-                $('.hidden-form').submit(function (event) {
-                    $('.token').val(res.token);
-                    return true;
-                    //this.token = res.token;
-                });
-                */
-                /*
-                var redirect = function(url, method) {
-                    var form = document.createElement('form');
-                    var inputToken = document.createElement('token');
-                    form.appendChild(inputToken);
-                    form.method = method;
-                    form.action = url;
-                    form.token = res.token;
-                    form.submit();
-                };
+                if (res.success) {
+                    //alert(res);
+                    docCookies.setItem('token', res.token);
+                    docCookies.setItem('userID', res.userID);
+                    docCookies.setItem('organizationID', res.organizationID);
+                    window.location.href = '/';
+                    //window.location.href = '/?token=' + res.token;
+                }
 
-                redirect('/', 'post');
-                */
-                window.location.href = '/?token=' + res.token;
-                /*
-                $.ajax({
-                    url: '/',
-                    type: 'GET',
-                    data: { 'token': res.token },
-                    success: function (res) {
-                        //alert('response success ! data: ' + JSON.stringify(res));
-                        //$(this).text(res);
-                        window.location.href = '/';
-                    }
-                });
-                */
             }
         });
 
