@@ -143,8 +143,8 @@ router.post('/api/v1/auth', function(req, res) {
                     success: true,
                     message: 'Enjoy your token !',
                     token: token,
-                    userID: userInfo.userID,
-                    organizationID: userInfo.organizationID
+                    userID: userInfo.userid,
+                    organizationID: userInfo.organizationid
                 });
             }
             else {
@@ -302,44 +302,55 @@ router.post('/api/v1/party', function(req, res) {
 /**************************************
   purpose: 回傳指定時間的 parties.
   path: /api/v1/parties/:year/:month
+  query string: token, organizationID
   method: GET
-  res.body: [
-      {
-          name: string,
-          partyID: integer,
-          creatorID: integer,
-          storeID: integer,
-          creator: string,
-          store: string,
-          createDate: string,
-          expiredDate: string,
-          ready: boolean,
-          ordersCount: integer
-      },
-      ...
-  ]
+  response:
+  {
+      success: true,
+      message: string,
+      parties: [
+          {
+              name: string,
+              party_id: integer,
+              creator_id: integer,
+              store_id: integer,
+              creator: string,
+              store: string,
+              create_date: string,
+              expired_date: string,
+              ready: boolean,
+              orders_count: integer
+          },
+          ...
+      ]
+  }
 **************************************/
 router.get('/api/v1/parties/:year/:month', function(req, res) {
-    var uiYear = req.params.year;
-    var uiMonth = req.params.month;
-    var queryOrganization = req.query.organization;
+    var uiYear = req.params.year;   // from URL
+    var uiMonth = req.params.month; // from URL
+    var queryOrganization = req.query.organizationID; // from Query string
 
     console.log('enter parties !');
+    console.log('uiYear: ' + uiYear);
+    console.log('uiMonth: ' + uiMonth);
+    console.log('queryOrganization: ' + queryOrganization);
+
+    var results = [];
     // todo: get from user info
     //var organization = ;
     pg.connect(connectionString, function(err, client, done) {
         var queryString =
             'SELECT'+
             ' parties.name AS name,'+
-            ' parties.party_id AS partyID,'+
-            ' parties.creator_id AS creatorID,'+
-            ' parties.store_id AS storeID,'+
+            ' parties.party_id AS party_id,'+
+            ' parties.creator_id AS creator_id,'+
+            ' parties.store_id AS store_id,'+
             ' users.name AS creator,'+
             ' stores.name AS store,'+
-            ' TO_CHAR(parties.create_date, \'yyyy-mm-dd hh:mm:ss\') AS createDate,'+
-            ' TO_CHAR(parties.expired_date, \'yyyy-mm-dd hh:mm:ss\') AS expiredDate,'+
+            ' TO_CHAR(parties.create_date, \'yyyy-mm-dd hh:mm:ss\') AS create_date,'+
+            ' TO_CHAR(parties.expired_date, \'yyyy-mm-dd hh:mm:ss\') AS expired_date,'+
             ' parties.ready AS ready,'+
-            ' (SELECT COUNT(*) FROM orders WHERE parties.party_id = orders.party_id) AS orderCount'+
+            ' (SELECT COUNT(*) FROM orders WHERE parties.party_id = orders.party_id) AS order_count'+
             ' FROM parties, users, stores, orders'+
             ' WHERE'+
             ' (parties.organization_id = {0}'+
@@ -352,23 +363,30 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
             ' ORDER BY parties.party_id ASC;';
 
         queryString = queryString.format(queryOrganization, '{0}-{1}-01'.format(uiYear, uiMonth), '{0}-{1}-31'.format(uiYear, uiMonth));
-        console.log(queryString);
-        var query = client.query(queryString, function (err, results) {
-            if (err) {
-                return res.json({
-                    success: false,
-                    message: err
-                });
-            }
+        //console.log(queryString);
+        var query = client.query(queryString);
 
+        if (err) {
+            return res.json({
+                success: false,
+                message: err
+            });
+        }
+
+        query.on('row', function(row) {
+            results.push(row);
+        });
+
+        // After all data is returned, close connection and return results
+        query.on('end', function() {
             client.end();
-
-            // response
+            console.log(results);
             return res.json({
                 success: true,
-                results: results.rows
+                parties: results
             });
-        }); // end of client.query
+        });
+
     }); // end of pg.connect
 }); // end of rout.get
 
@@ -421,9 +439,77 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
 
 /*
   purpose: 查看某 party orders
-  path: /api/v1/party/:partyID/orders
+  path: /api/v1/party/:party_id/orders
+  query string: token, organizationID
   method: GET
+  req.body: {
+    success: boolean,
+    message: string,
+    orders: [
+      {
+        order_id: integer,
+        user_id: integer,
+        user_name: string,
+        product: string,
+        price: float,
+        create_date: string
+      }
+    ]
+  }
 */
+router.get('/api/v1/party/:party_id/orders', function (req, res) {
+    var partyID = req.params.party_id;
+    var organizationID = req.query.organizationID;
+
+    if (!partyID) {
+      return res.json({
+          success: false,
+          message: 'partyID is not defined !'
+      })
+    }
+
+    if (!organizationID) {
+        return res.json({
+            success: false,
+            message: 'organizationID is not defined !'
+        })
+    }
+
+    var results = [];
+    pg.connect(connectionString, function(err, client, done) {
+        // todo: SQL statement
+        var queryString = 'SELECT order_id, users.user_id AS user_id, users.name AS user_name, product, price, TO_CHAR(orders.create_date, \'yyyy-mm-dd hh:mm:ss\') AS create_date FROM orders, users WHERE (users.user_id = orders.user_id);';
+
+        var query = client.query(queryString);
+
+        if (err) {
+            return res.json({
+                success: false,
+                message: err
+            });
+        }
+
+        query.on('row', function(row) {
+            results.push(row);
+        });
+
+        // After all data is returned, close connection and return results
+        query.on('end', function() {
+            client.end();
+            console.log(results);
+            return res.json({
+                success: true,
+                message: '',
+                orders: results
+            });
+        });
+    });
+});
+// todo
+
+
+
+
 
 /*
   purpose:
@@ -465,6 +551,18 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
   purpose: 查看 store products list
   path: /api/v1/store/:id/products
   method: GET
+  res.body: {
+    success: boolean,
+    message: string,
+    results: [
+      {
+        product_id: integer,
+        product_name: string,
+        price: float
+      },
+      ...
+    ]
+  }
 */
 
 /*
@@ -472,8 +570,8 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
   path: /api/v1/product/:id
   method: GET
   res.body: {
-    productID: integer,
-    storeID: integer,
+    product_id: integer,
+    store_id: integer,
     name: string,
     price: float
   }

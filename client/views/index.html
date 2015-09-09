@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html ng-app="main">
   <head>
-    <title>要吃啥？</title>
+    <title>便當來了</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- styles -->
     <link href="http://netdna.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel="stylesheet" media="screen">
@@ -31,7 +31,7 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="javascript:void(0)">訂便當</a>
+                <a class="navbar-brand" href="javascript:void(0)">便當來了</a>
             </div>
             <div class="navbar-collapse collapse navbar-responsive-collapse">
                 <ul class="nav navbar-nav">
@@ -43,7 +43,7 @@
                     <li class="dropdown">
                         <a href="bootstrap-elements.html" data-target="#" class="dropdown-toggle" data-toggle="dropdown">Dropdown <b class="caret"></b></a>
                         <ul class="dropdown-menu">
-                            <li><a href="javascript:void(0)">Action</a></li>
+                            <li><a class="logout" href="javascript:void(0)">Log out</a></li>
                             <li><a href="javascript:void(0)">Another action</a></li>
                             <li><a href="javascript:void(0)">Something else here</a></li>
                             <li class="divider"></li>
@@ -58,44 +58,128 @@
       <!-- week-bar: 1 2 2 2 2 2 1 -->
       <div class="row">
         <div class="col-md-1">
-
+          <div class="day-0">
+            <p></p>
+          </div>
         </div>
 
         <div class="col-md-2">
-
+          <div class="day-1">
+            <p></p>
+          </div>
         </div>
 
         <div class="col-md-2">
-
+          <div class="day-2">
+            <p></p>
+          </div>
         </div>
 
         <div class="col-md-2">
-
+          <div class="day-3">
+            <p></p>
+          </div>
         </div>
 
         <div class="col-md-2">
-
+          <div class="day-4">
+            <p></p>
+          </div>
         </div>
 
         <div class="col-md-2">
-
+          <div class="day-5">
+            <p></p>
+          </div>
         </div>
 
         <div class="col-md-1">
-
+          <div class="day-6">
+            <p></p>
+          </div>
         </div>
 
       </div>
 
-      <!-- parties-list -->
+      <!-- parties-list; show as tab list -->
       <div class="row">
-
+        <ul class="nav nav-pills" class="today-parties">
+          <li class="today-party" ng-repeat="todayParty in todayParties" ng-class="{active: todayParties[$index].active}">
+            <a href="javascript:void(0)">{{todayParty.name}}</a>
+          </li>
+        </ul>
 
       </div>
 
+      <!-- party and orders info -->
       <div class="row">
+        <!-- product-info -->
+        <div class="col-md-4">
+          <!-- store info -->
+          <div ng-show="selectOrderSummary == null">
+            <p>{{storeName}}</p>
+          </div>
 
+          <div ng-show="selectOrderSummary != null" class="product-info">
+            <!-- p>Product Info</p -->
+            <!-- product name -->
+            <div class="row"></div>
 
+            <!-- product price -->
+            <div class="row"></div>
+
+            <!-- rate -->
+            <div class="row"></div>
+
+            <!-- comments list -->
+            <div class="row"></div>
+          </div>
+        </div>
+        <!-- party-info -->
+        <div class="col-md-8">
+          <div class="party-info">
+            <!-- search input -->
+            <div class="row search-orders">
+              <form class="navbar-form navbar-left">
+                <input type="text" class="form-control col-lg-8" placeholder="快速搜尋">
+              </form>
+            </div>
+
+            <!-- orders list -->
+            <div class="row">
+              <div class="orders-list">
+                <!-- table -->
+                <table class="table table-striped table-hover ">
+                  <thead>
+                    <tr>
+                      <th>吃什麼</th>
+                      <th>價錢</th>
+                      <th>誰訂了</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr ng-repeat="orderSummary in orderSummaries" ng-class="{info: orderSummary === selectOrderSummary}">
+                      <td>
+                        <a ng-click="clickOrder(orderSummary)">
+                          {{orderSummary.product}}
+                        </a>
+                      </td>
+                      <td>{{orderSummary.price}}</td>
+                      <td>
+                        <a ng-repeat="user in orderSummary.users" href="javascript:void(0)">
+                          {{user.name}}
+                        </a>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- create order -->
+            <div class="row input-area"></div>
+          </div>
+        </div>
       </div>
 
       <div class="col-md-0">

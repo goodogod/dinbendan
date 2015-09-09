@@ -26,15 +26,6 @@ $(document).ready(function() {
                 //alert('AJAX request occurs an error: ' + JSON.stringify(error));
             },
             success: function (res) {
-                /*
-                res: {
-                    success: boolean,
-                    message: string,
-                    token: token,
-                    userID: integer,
-                    organizationID: integer
-                }
-                */
                 if (res.success) {
                     //alert(res);
                     docCookies.setItem('token', res.token);
@@ -49,20 +40,5 @@ $(document).ready(function() {
 
         //return false;
         event.preventDefault();
-
-        /*
-        $.post('/api/v1/auth', postData,
-        function (data, status) {
-            alert('post end');
-            if (data.success) {
-                alert(data.token);
-            }
-            else {
-                alert('Auth failed ! data: ' + JSON.stringify(data) + ', status: ' + status);
-            }
-        });
-        */
-
-        //window.location.href = '';
     });
 });
