@@ -27,7 +27,7 @@ $(document).ready(function() {
             },
             success: function (res) {
                 if (res.success) {
-                    //alert(res);
+                    //alert(JSON.stringify(res);
                     docCookies.setItem('token', res.token);
                     docCookies.setItem('userID', res.userID);
                     docCookies.setItem('organizationID', res.organizationID);

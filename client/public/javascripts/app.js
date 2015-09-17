@@ -1,10 +1,10 @@
-//var angular = require('angular');
+'use strict';
 
 
 // jQuery area
 $(document).ready(function() {
     //alert('ready !');
-    $.material.init();
+    //$.material.init();
 
     $('.logout').click(function () {
         //alert('logout click !');
@@ -14,12 +14,6 @@ $(document).ready(function() {
         docCookies.setItem('organizationID', undefined);
         window.location.href = '/';
     });
-
-    //$('#calendar').fullCalendar({
-        //weekends: false // will hide Saturdays and Sundays
-        // put your options and callbacks here
-        //$.get('/api/v1/parties');
-    //});
 });
 
 // create angular module
@@ -29,16 +23,61 @@ angular.module('main', [])
     // verify id
     var token = docCookies.getItem('token');
     var organizationID = docCookies.getItem('organizationID');
+    var userID = docCookies.getItem('userID');
+
+    //$scope.activePage = 'mainView';
 
     // initialize all scope variables
+
+    $scope.organizationID = organizationID;
+    $scope.userInfo = {
+        userName: undefined,
+        userID: undefined,
+        organizationID: undefined,
+        money: NaN,
+        create_date: undefined,
+        role: undefined,
+        image: undefined,
+        updateUserInfo: function (userID) {
+            $scope.userInfo.userID = userID;
+            $scope.userInfo.organizationID = organizationID;
+
+            var req = {
+                method: 'GET',
+                url: '/api/v1/users',
+                params: {
+                    token:          token,
+                    userID:         userID,
+                    organizationID: organizationID
+                }
+            };
+
+            $http(req).success(function (response) {
+                if (response.success) {
+                    for (var i = 0; i < response.users.length; i++) {
+                        var userFromRes = response.users[i];
+                        if (userFromRes.user_id == $scope.userInfo.userID) {
+                            $scope.userInfo.userName = userFromRes.user_name;
+                            $scope.userInfo.organizationID = userFromRes.organization_id;
+                            $scope.userInfo.money = parseInt(userFromRes.money);
+                            $scope.userInfo.create_date = userFromRes.create_date;
+                            $scope.userInfo.role = userFromRes.role;
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+    };
+    $scope.userInfo.updateUserInfo(userID);
+
     /*******************************
-     format: [
-       { party_id, create_date: Date, expired_date: Date }, ...]
+     format: [ { party_id, create_date: Date, expired_date: Date }, ...]
     *******************************/
     $scope.todayParties = [];
 
     /*******************************
-      format: [
+      orderSummaries: [
           {
               product,
               price,
@@ -49,10 +88,129 @@ angular.module('main', [])
                   },
                   ...
               ]
-          }
+          },
+          { ... }
       ]
     *******************************/
     $scope.orderSummaries = [];
+
+    // 更新 orderSummaries
+    $scope.updateOrderSummaries = function (orderSummaries, activeParty, productsList, token, organizationID) {
+        orderSummaries.length = 0;
+        if ($scope.activeParty) {
+            // get orders list
+            var partyID = activeParty.party_id;
+            var req = {
+                method: 'GET',
+                url: 'api/v1/party/' + partyID + '/orders',
+                params: {
+                    token:          token,
+                    userID:         userID,
+                    organizationID: organizationID
+                }
+            };
+
+            $http(req).success(function (response) {
+                if (response.success) {
+                    for (var i = 0; i < response.orders.length; i++) {
+                        var curOrder = response.orders[i];
+                        var curSummary = null;
+                        for (var j = 0; j < orderSummaries.length; j++){
+                            if (curOrder.product == orderSummaries[j].product) {
+                                curSummary = orderSummaries[j];
+                                curSummary.users.push({
+                                    id:   curOrder.user_id,
+                                    name: curOrder.user_name
+                                });
+                                break;
+                            }
+                        }
+
+                        if (!curSummary) {
+                            var newSummary = {
+                                product: curOrder.product,
+                                price: curOrder.price,
+                                users: []
+                            };
+                            newSummary.users.push({
+                                id:   curOrder.user_id,
+                                name: curOrder.user_name
+                            });
+                            orderSummaries.push(newSummary);
+                        }
+                    }
+
+                    // todo: add products which no one orders.
+                }
+                // add rest products by productsList
+                for (var i = 0; i < productsList.length; i++) {
+                    var existsInSummaries = false;
+                    for (var j = 0; j < orderSummaries.length; j++) {
+                        if (productsList[i].product_name == orderSummaries[j].product) {
+                            existsInSummaries = true;
+                            break;
+                        }
+                    }
+                    if (!existsInSummaries) {
+                        orderSummaries.push({
+                            product: productsList[i].product_name,
+                            price: productsList[i].price,
+                            users: []
+                        });
+                    }
+                }
+            });
+        } // end of if (activeParty)
+    };
+
+    // 判斷此 user 是否在此 party 的訂單列表中
+    $scope.userInOrderSummaries = function() {
+        for (var i = 0; i < $scope.orderSummaries.length; i++) {
+                for (var j = 0; j < $scope.orderSummaries[i].users.length; j++) {
+                        if ($scope.orderSummaries[i].users[j].id == $scope.userInfo.userID) {
+                        return true;
+                    }
+                }
+
+        }
+        return false;
+    };
+
+    /*
+        productsList: [
+            {
+                product_id: integer,
+                product_name: string,
+                store_id: integer,
+                price: float
+            },
+            { ... },
+            ...
+        ]
+    */
+    $scope.productsList = [];
+    $scope.updateProductsListAndOrderSummaries = function (productsList, storeID, token, organizationID) {
+        productsList = [];
+        var req = {
+            method: 'GET',
+            url: '/api/v1/store/' + storeID + '/products',
+            params: {
+                token:          token,
+                userID:         userID,
+                organizationID: organizationID
+            }
+        };
+        $http(req).success(function (response) {
+            if (response.success) {
+                //productsList = response.products;
+                for (var i = 0; i < response.products.length; i++) {
+                    productsList.push(response.products[i]);
+                }
+
+                $scope.updateOrderSummaries($scope.orderSummaries, $scope.activeParty, productsList, token, organizationID);
+            }
+        });
+    };
 
     /*******************************
     format: {
@@ -84,36 +242,156 @@ angular.module('main', [])
       }
     *******************************/
     $scope.selectOrderSummary = null;
+    //$scope.updateSelectOrderSummary = function () {
+    //};
+
+    /*******************************
+    format: [
+        {
+            comment_id: integer,
+            product_id: integer,
+            product_name: string,
+            user_id: integer,
+            user_name: string,
+            text: string, // markdown
+            date: string,
+            stars: integer
+        },
+        ...
+    ]
+    *******************************/
+    $scope.selectProductComments = null;
+
+    /*******************************
+    selectProductComments: {
+        productName: string,
+        price: integer,
+        note: string,
+        submitOrder: function
+    }
+    *******************************/
+    $scope.inputOrder = {
+        productName: '',
+        price: 0,
+        note: '',
+        submitOrder: function () {
+
+            var req = {
+                method: 'POST',
+                url: '/api/v1/order',
+                data: {
+                    user_id:  userID,
+                    party_id: $scope.activeParty.party_id,
+                    store_id: $scope.activeParty.store_id,
+                    product:  this.productName,
+                    price:    parseInt(this.price),
+                    note:     this.note
+                },
+                params: {
+                    token:          token,
+                    userID:         userID,
+                    organizationID: organizationID
+                }
+            };
+
+            $http(req).success(function (response) {
+                if (response.success) {
+                    // todo: update order list
+                    alert(response.order_id);
+                    $scope.updateProductsListAndOrderSummaries($scope.productsList, $scope.activeParty.store_id, token, organizationID);
+                }
+            });
+
+            /*
+            $http.post('/api/v1/order', {
+                    token: token,
+                    organizationID: organizationID,
+                    user_id: userID,
+                    party_id: $scope.activeParty.party_id,
+                    store_id: $scope.activeParty.store_id,
+                    product:  this.productName,
+                    price:    this.price,
+                    note:     this.note
+                }).then(function (response) {
+                    if (response.success) {
+                        alert(response.order_id);
+                }
+                });
+            */
+        }
+    };
 
     // string
     $scope.storeName = '幸福主';
 
     $scope.clickOrder = function (orderSummary) {
+        if ($scope.selectOrderSummary === orderSummary) {
+            $scope.selectOrderSummary = null;
+            return;
+        }
         $scope.selectOrderSummary = orderSummary;
 
         // todo: GET products list
+        //$scope.updateProductsList($scope.activeParty.store_id, $scope.productsList, token, organizationID);
+
         var req = {
             method: 'GET',
-            url: '/api/v1/store/' + $scope.activeParty.store_id + 'products',
+            url: '/api/v1/store/' + $scope.activeParty.store_id + '/products',
             params: {
                 token:          token,
+                userID:         userID,
                 organizationID: organizationID
             }
         };
         $http(req).success(function (response) {
             if (response.success) {
+
+                //format: { product_id, product_name, store_id, price }
+                var selProductInStore = null;
                 for (var i = 0; i < response.products.length; i++) {
                     if (response.products[i].product_name == $scope.selectOrderSummary.product) {
-                        // todo:
+                        selProductInStore = response.products[i];
+                        break;
+                        //alert($scope.selectOrderSummary.product);
+                        // todo: get product list
+                        // todo: show product info and comments.
                     }
                 }
+
+                $scope.selectProductComments = null;
+                if (selProductInStore) {
+                    var req = {
+                        method: 'GET',
+                        url: '/api/v1/product/' + selProductInStore.product_id + '/comments',
+                        params: {
+                            token: token,
+                            userID:         userID,
+                            organizationID: organizationID
+                        }
+                    };
+                    $http(req).success(function (response) {
+                        if (response.success) {
+                            $scope.selectProductComments = response.comments;
+                            //alert(JSON.stringify(response.comments));
+                        }
+                    });
+                }
             }
-        }
-
-        // todo: GET product info by name
-
-        // todo: GET product comments
+        });
     };
+
+    $scope.clickMainTitle = function () {
+        window.location.href = '/';
+    }
+
+    $scope.clickCreateParty = function () {
+        window.location.href = '/party';
+        //alert('Create party !');
+        //$('#createPartyModal').on('shown.bs.modal', function () {
+        //    $('#myInput').focus()
+        //});
+    };
+
 
     // display today
     // 0 ~ 6
@@ -123,10 +401,14 @@ angular.module('main', [])
     //alert(baseDate);
 
     // fill weekbar
+    $scope.todayDay = today.getDay();
+    $scope.daysInWeek = [];
     for (var i = 0; i <= 6; i++) {
         var curDate = new Date();
+
         curDate.setDate(baseDate.getDate() + i);
-        $('.day-' + i + ' p').text(curDate);
+        //$('.day-' + i + ' p').text(curDate);
+        $scope.daysInWeek.push(curDate);
     }
 
     // build party main frame
@@ -138,6 +420,7 @@ angular.module('main', [])
         url: reqUrl,
         params: {
             token: token,
+            userID:         userID,
             organizationID: organizationID
         }
     }
@@ -165,53 +448,8 @@ angular.module('main', [])
             }
 
             // initialize orderSummaries
-            if ($scope.activeParty) {
+            $scope.updateProductsListAndOrderSummaries($scope.productsList, $scope.activeParty.store_id, token, organizationID);
 
-                // get orders list
-                var partyID = $scope.activeParty.party_id;
-                var req = {
-                    method: 'GET',
-                    url: 'api/v1/party/' + partyID + '/orders',
-                    params: {
-                        token:          token,
-                        organizationID: organizationID
-                    }
-                }
-
-                $http(req).success(function (response) {
-                    if (response.success) {
-                        for (var i = 0; i < response.orders.length; i++) {
-                            var curOrder = response.orders[i];
-                            var curSummary = null;
-                            for (var j = 0; j < $scope.orderSummaries.length; j++){
-                                if (curOrder.product == $scope.orderSummaries[j].product) {
-                                    curSummary = $scope.orderSummaries[j];
-                                    curSummary.users.push({
-                                        id:   curOrder.user_id,
-                                        name: curOrder.user_name
-                                    });
-                                    break;
-                                }
-                            }
-
-                            if (!curSummary) {
-                                var newSummary = {
-                                    product: curOrder.product,
-                                    price: curOrder.price,
-                                    users: []
-                                };
-                                newSummary.users.push({
-                                    id:   curOrder.user_id,
-                                    name: curOrder.user_name
-                                });
-                                $scope.orderSummaries.push(newSummary);
-                            }
-                        }
-
-                        //alert(JSON.stringify($scope.orderSummaries));
-                    }
-                });
-            } // end of if (activeParty)
         } // end of if (response.success)
     });
 
@@ -228,61 +466,3 @@ angular.module('main', [])
     }
 });
 
-// deprecate
-angular.module('nodeTodo', [])
-// create controller
-.controller('mainController', function($scope, $http) {
-	$scope.formData = {};
-	$scope.todoData = {};
-
-
-	// Get all todos
-	$http.get('/api/v1/todos')
-   .success(function(data) {
-      $scope.todoData = data;
-      console.log(data);
-  })
-   .error(function(error) {
-      console.log('Error: ' + error);
-  });
-
-	// Create a new todo
-	$scope.createTodo = function(todoID) {
-		console.info('enter createTodo');
-        $http.post('/api/v1/todos', $scope.formData)
-        .success(function(data) {
-           $scope.formData = {};
-           $scope.todoData = data;
-           console.log(data);
-       })
-        .error(function(error) {
-           console.log('Error: ' + error);
-       });
-    };
-
-    // Delete a todo
-    $scope.deleteTodo = function (todoID) {
-    	console.info('enter deleteTodo');
-       $http.delete('/api/v1/todos/' + todoID)
-       .success(function(data) {
-           $scope.todoData = data;
-           console.log(data);
-       })
-       .error(function(data) {
-           console.log('Error: ' + data);
-       });
-   };
-
-   $scope.layoutDone = function() {
-		//alert('done !');
-		$.material.init();
-	}
-})
-// 特殊的方法, 可正確抓到 ng-repeat 的結束時機
-.directive('repeatDone', function() {
-	return function(scope, element, attrs) {
-    		if (scope.$last) { // all are rendered
-                scope.$eval(attrs.repeatDone);
-            }
-        };
-    });

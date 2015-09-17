@@ -4,6 +4,7 @@ var path = require('path');
 var pg = require('pg');
 var fs = require('fs');
 var jwt = require('jsonwebtoken'); // used to create, sign, and verify tokens
+var queryPackage = require('../../models/query.js');
 //var session = require('express-session');
 var connectionString = require(path.join(__dirname, '../../', 'config'));
 
@@ -26,20 +27,63 @@ if (!String.prototype.format) {
 
 var index_path = path.join(__dirname, '..', '..', 'client', 'views', 'index.html');
 var login_path = path.join(__dirname, '..', '..', 'client', 'views', 'login.html');
+var party_path = path.join(__dirname, '..', '..', 'client', 'views', 'party.html');
+
+/*
+function initializePage(routPath) {
+    if (routPath = '/') {
+      routPath = 'index';
+    }
+    var realPath = path.join(__dirname, '..', '..', 'client', 'views', routPath + '.html');
+    console.log(realPath);
+    // page navigation
+    router.get(path, function(req, res, next) {
+        //console.log(req.query);
+        //res.send('haha!');
+        //console.log('GET root');
+        //console.log('router.get(/): ready to get token: ');
+
+        //var token = req.body.token || req.query.token || req.headers['x-access-token'];
+        //var token = req.session.token;
+        var token = req.cookies ? req.cookies.token : undefined;
+
+        if (token) {
+            console.log('router.get(' + routPath + '): get token, ready to verify:');
+            // verifies secret and checks exp
+            jwt.verify(token, secretString, function(err, decoded) {
+                if (err) {
+                    res.redirect('/login');
+                }
+                else {
+                    res.sendFile(realPath);
+                }
+            })
+        }
+        else {
+            //console.log('router.get(/): No token. response login page');
+            res.redirect('/login');
+            //res.sendFile(login_path);
+        }
+    });
+}
+
+initializePage('/');
+initializePage('/party');
+*/
 
 // page navigation
 router.get('/', function(req, res, next) {
     //console.log(req.query);
     //res.send('haha!');
     //console.log('GET root');
-    console.log('router.get(/): ready to get token: ');
+    //console.log('router.get(/): ready to get token: ');
 
     //var token = req.body.token || req.query.token || req.headers['x-access-token'];
     //var token = req.session.token;
     var token = req.cookies ? req.cookies.token : undefined;
 
     if (token) {
-        console.log('router.get(/): get token, ready to verify:');
+        //console.log('router.get(/): get token, ready to verify:');
         // verifies secret and checks exp
         jwt.verify(token, secretString, function(err, decoded) {
             if (err) {
@@ -51,11 +95,31 @@ router.get('/', function(req, res, next) {
         })
     }
     else {
-        console.log('router.get(/): No token. response login page');
+        //console.log('router.get(/): No token. response login page');
         res.redirect('/login');
         //res.sendFile(login_path);
     }
 });
+
+router.get('/party', function(req, res, next) {
+    var token = req.cookies ? req.cookies.token : undefined;
+    if (token) {
+        // verifies secret and checks exp
+        jwt.verify(token, secretString, function(err, decoded) {
+            if (err) {
+                res.redirect('/login');
+            }
+            else {
+                res.sendFile(party_path);
+            }
+        })
+    }
+    else {
+        res.redirect('/login');
+    }
+});
+
+
 
 /*
 router.post('/', function (req, res) {
@@ -92,9 +156,9 @@ router.get('/login', function (req, res, next) {
 router.post('/api/v1/auth', function(req, res) {
     var user_input_name = req.body.name;
     var user_input_pass = req.body.password;
-    console.log('router.post(/api/v1/auth): post auth ~');
-    console.log('router.post(/api/v1/auth): ' + user_input_name);
-    console.log('router.post(/api/v1/auth): ' + user_input_pass);
+    //console.log('router.post(/api/v1/auth): post auth ~');
+    //console.log('router.post(/api/v1/auth): ' + user_input_name);
+    //console.log('router.post(/api/v1/auth): ' + user_input_pass);
     var name_pass_list = [];
 
     // Get a Postgres client from the connection pool
@@ -167,7 +231,7 @@ router.post('/api/v1/auth', function(req, res) {
 
 // protect APIs, 位置很重要, 必須在 auth 之後, 其他 API 之前, 才起到保護作用
 router.use('/api', function(req, res, next) {
-    console.log('enter api middleware');
+    //console.log('enter api middleware');
     // check header or url parameters or post parameters for token
     var token = req.body.token || req.query.token || req.headers['x-access-token'];
 
@@ -204,9 +268,10 @@ router.use('/api', function(req, res, next) {
   method: GET
   response: [
               { user_id: intger,
-              name: string,
+              user_name: string,
+              organization_id: integer,
               organization: string,
-              createDate: string,
+              create_date: string,
               role: string,
               money: string },
               { ... }, ...
@@ -219,7 +284,7 @@ router.get('/api/v1/users', function(req, res) {
     pg.connect(connectionString, function(err, client, done) {
 
         // SQL Query > Select Data
-        var query = client.query('SELECT users.name As user, organizations.name As organization, users.create_date AS create_date, users.role AS role, users.money AS money FROM user_organization, users, organizations WHERE (user_organization.user_id = users.user_id AND user_organization.organization_id = organizations.organization_id) ORDER BY user ASC;');
+        var query = client.query('SELECT users.user_id AS user_id, users.name As user_name, user_organization.organization_id AS organization_id, organizations.name As organization, users.create_date AS create_date, users.role AS role, users.money AS money FROM user_organization, users, organizations WHERE (user_organization.user_id = users.user_id AND user_organization.organization_id = organizations.organization_id) ORDER BY user ASC;');
 
         // Stream results back one row at a time
         query.on('row', function(row) {
@@ -229,12 +294,20 @@ router.get('/api/v1/users', function(req, res) {
         // After all data is returned, close connection and return results
         query.on('end', function() {
             client.end();
-            return res.json(results);
+            return res.json({
+                success: true,
+                message: 'OK',
+                users: results
+            });
         });
 
         // Handle Errors
         if(err) {
           console.log(err);
+          return res.json({
+              success: false,
+              message: 'Query error: ' + err
+          });
         }
     });
 });
@@ -245,20 +318,20 @@ router.get('/api/v1/users', function(req, res) {
   method: POST
   req.body: {
     name: string,
-    organizationID: integer,
-    creatorID: integer,
-    storeID: integer,
-    createDate: string,
-    expiredDate: string
+    organization_id: integer,
+    creator_id: integer,
+    store_id: integer,
+    create_date: string,
+    expired_date: string
   }
 
   res: {
     success: boolean
-    partyID: integer
+    party_id: integer
   }
 */
 
-router.post('/api/v1/party', function(req, res) {
+router.post('/api/v1/party', function (req, res) {
     var uiName = req.body.name;
     var uiOrgID = req.body.organizationID;
     var uiCreatorID = req.body.creatorID;
@@ -330,10 +403,10 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
     var uiMonth = req.params.month; // from URL
     var queryOrganization = req.query.organizationID; // from Query string
 
-    console.log('enter parties !');
-    console.log('uiYear: ' + uiYear);
-    console.log('uiMonth: ' + uiMonth);
-    console.log('queryOrganization: ' + queryOrganization);
+    //console.log('enter parties !');
+    //console.log('uiYear: ' + uiYear);
+    //console.log('uiMonth: ' + uiMonth);
+    //console.log('queryOrganization: ' + queryOrganization);
 
     var results = [];
     // todo: get from user info
@@ -380,7 +453,7 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
         // After all data is returned, close connection and return results
         query.on('end', function() {
             client.end();
-            console.log(results);
+            //console.log(results);
             return res.json({
                 success: true,
                 parties: results
@@ -424,18 +497,139 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
   purpose: 訂購 (遞出 order)
   path: /api/v1/order
   method: POST
+  query: token
   req.body: {
-    userID: integer,
-    partyID: integer,
+    user_id: integer,
+    party_id: integer,
+    store_id: integer, // for query products list
     product: string,
-    price,
-    createDate
+    price: integer,
+    note: string
   }
   res.body: {
     success: boolean,
-    orderID: integer
+    message: string,
+    order_id: integer
   }
+
+  Pseudo code:
+    用 product name 及 price 查找 product list:
+    if 完全匹配:
+      success = true
+      新建一筆 order
+    elif Name 匹配但 price 不匹配:
+      success = false
+      message = "金額錯誤"
+    else:
+      success = true
+      新建一筆 order
+      新建一筆 product
 */
+router.post('/api/v1/order', function (req, res) {
+    //console.log('enter POST order');
+    //console.log(JSON.stringify(req.body));
+    var uiUserID = req.body.user_id;
+    var uiPartyID = req.body.party_id;
+    var uiStoreID = req.body.store_id;
+    var uiProduct = req.body.product;
+    var uiPrice = req.body.price;
+    var uiNote = req.body.note;
+
+    //console.log(uiStoreID);
+
+    // todo: check price validation
+
+    // [ { id: integer, name: string, price: integer }, ... ]
+    var productsInStore = [];
+    pg.connect(connectionString, function(err, client, done) {
+        //console.log('connect OK');
+        var queryString = queryPackage.queryProductsListByStoreID_F1.format(uiStoreID);
+        //console.log(queryString);
+        var query = client.query(queryString);
+
+        if (err) {
+            return res.json({
+                success: false,
+                message: err
+            });
+        }
+
+        query.on('row', function(row) {
+            //console.log('ROW: ' + JSON.stringify(row));
+            productsInStore.push({
+                id: parseInt(row.id),
+                name: row.name,
+                price: parseInt(row.price)
+            });
+        });
+
+        query.on('end', function() {
+            //console.log('enter OK');
+            client.end();
+
+            // exist/new/incorrect
+            var orderStatus = '';
+            for (var i = 0; i < productsInStore.length; i ++) {
+                var product = productsInStore[i];
+                if (product.name == uiProduct) {
+                    if (product.price == uiPrice) {
+                        orderStatus = 'exist';
+                        break;
+                    }
+                    else {
+                        orderStatus = 'incorrect';
+                        break;
+                    }
+                }
+            }
+            if (orderStatus == '') {
+                orderStatus = 'new';
+            }
+
+            // treat order with orderStatus
+            var newOrderID = NaN;
+            console.log('orderStatus: ' + orderStatus);
+            if (orderStatus == 'exist') {
+                var queryString = queryPackage.insertOrder_F4.format(uiUserID, uiPartyID, uiProduct, uiPrice);
+
+                pg.connect(connectionString, function(err, client, done) {
+                    var query = client.query(queryString);
+
+                    query.on('row', function (row) {
+                        newOrderID = row.order_id;
+                    });
+
+                    query.on('end', function() {
+                        client.end();
+
+                        return res.json({
+                            success: true,
+                            message: 'Create order OK !',
+                            order_id: newOrderID
+                        });
+                    });
+                });
+
+            }
+            else if (orderStatus == 'new') {
+
+            }
+            else if (orderStatus == 'incorrect') {
+                return res.json({
+                    success: false,
+                    message: 'Prodcut price is incorrect !'
+                });
+            }
+            else {
+                return res.json({
+                    success: false,
+                    message: 'Something wrong during insert order !'
+                });
+            }
+        });
+    });
+
+});
 
 /*
   purpose: 查看某 party orders
@@ -496,7 +690,7 @@ router.get('/api/v1/party/:party_id/orders', function (req, res) {
         // After all data is returned, close connection and return results
         query.on('end', function() {
             client.end();
-            console.log(results);
+            //console.log(results);
             return res.json({
                 success: true,
                 message: '',
@@ -505,7 +699,6 @@ router.get('/api/v1/party/:party_id/orders', function (req, res) {
         });
     });
 });
-// todo
 
 
 
@@ -554,16 +747,69 @@ router.get('/api/v1/party/:party_id/orders', function (req, res) {
   res.body: {
     success: boolean,
     message: string,
-    results: [
+    products: [
       {
         product_id: integer,
         product_name: string,
-        price: float
+        store_id: integer,
+        price: integer
       },
       ...
     ]
   }
 */
+router.get('/api/v1/store/:store_id/products', function (req, res) {
+    var storeID = req.params.store_id;
+    var organizationID = req.query.organizationID;
+
+    if (!storeID) {
+      return res.json({
+          success: false,
+          message: 'storeID is not defined !'
+      })
+    }
+
+    if (!organizationID) {
+        return res.json({
+            success: false,
+            message: 'organizationID is not defined !'
+        })
+    }
+
+    var results = [];
+    pg.connect(connectionString, function(err, client, done) {
+        // todo: SQL statement
+        var queryString = 'SELECT product_id, name AS product_name, store_id, price FROM products WHERE (store_id = {0});';
+
+        queryString = queryString.format(storeID);
+        //console.log(queryString);
+        var query = client.query(queryString);
+
+        if (err) {
+            return res.json({
+                success: false,
+                message: err
+            });
+        }
+
+        query.on('row', function(row) {
+            results.push(row);
+        });
+
+        // After all data is returned, close connection and return results
+        query.on('end', function() {
+            client.end();
+            //console.log(results);
+            return res.json({
+                success: true,
+                message: '',
+                products: results
+            });
+        });
+    });
+});
+
+// todo
 
 /*
   purpose: 查看某個 product
@@ -583,35 +829,91 @@ router.get('/api/v1/party/:party_id/orders', function (req, res) {
   path: /api/v1/product/:id/comment
   method: POST
   req.body: {
-    productID: integer,
+    product_id: integer,
     commentUserID: integer,
     text: string, // markdown
     date: string,
     stars: integer
   }
   res.body: {
-    succes: boolean,
+    success: boolean,
     commentID: integer
   }
 */
 
+
 /*
   purpose: 查看 comment list
-  path: /api/v1/product/:productID/comments
+  path: /api/v1/product/:product_id/comments
   method: GET
-  res.body:
-  [
-      {
-          commentID: integer,
-          productID: integer,
-          commentUserID: integer,
-          text: string, // markdown
-          date: string,
-          stars: integer
-      },
-      ...
-  ]
+  res.body: {
+    success: boolean,
+    message: string,
+    comments: [
+        {
+            comment_id: integer,
+            product_id: integer,
+            product_name: string,
+            user_id: integer,
+            user_name: string,
+            text: string, // markdown
+            date: string,
+            stars: integer
+        },
+        ...
+    ]
+  }
 */
+router.get('/api/v1/product/:product_id/comments', function (req, res) {
+    var productID = req.params.product_id;
+    var organizationID = req.query.organizationID;
+
+    if (!productID) {
+      return res.json({
+          success: false,
+          message: 'productID is not defined !'
+      })
+    }
+
+    if (!organizationID) {
+        return res.json({
+            success: false,
+            message: 'organizationID is not defined !'
+        })
+    }
+
+    var results = [];
+    pg.connect(connectionString, function(err, client, done) {
+        // todo: SQL statement
+        var queryString = 'SELECT comment_id, comments.product_id, products.name AS product_name, comment_user_id AS user_id, users.name AS user_name, text, stars, comments.date FROM comments, users, products WHERE (comment_user_id = users.user_id AND comments.product_id = products.product_id AND comments.product_id = {0});';
+
+        queryString = queryString.format(productID);
+        //console.log(queryString);
+        var query = client.query(queryString);
+
+        if (err) {
+            return res.json({
+                success: false,
+                message: err
+            });
+        }
+
+        query.on('row', function(row) {
+            results.push(row);
+        });
+
+        // After all data is returned, close connection and return results
+        query.on('end', function() {
+            client.end();
+            //console.log(results);
+            return res.json({
+                success: true,
+                message: '',
+                comments: results
+            });
+        });
+    });
+});
 
 
 // template, remove in future

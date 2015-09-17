@@ -72,7 +72,8 @@ var query = client.query(
         'product_id INTEGER REFERENCES products(product_id),' +
         'comment_user_id INTEGER REFERENCES users(user_id),' +
         'text TEXT,' +
-        'stars INTEGER)'
+        'stars INTEGER,' +
+        'date TIMESTAMP)'
 );
 
 // parties table
