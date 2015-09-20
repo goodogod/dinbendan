@@ -27,49 +27,8 @@ if (!String.prototype.format) {
 
 var index_path = path.join(__dirname, '..', '..', 'client', 'views', 'index.html');
 var login_path = path.join(__dirname, '..', '..', 'client', 'views', 'login.html');
-var party_path = path.join(__dirname, '..', '..', 'client', 'views', 'party.html');
-
-/*
-function initializePage(routPath) {
-    if (routPath = '/') {
-      routPath = 'index';
-    }
-    var realPath = path.join(__dirname, '..', '..', 'client', 'views', routPath + '.html');
-    console.log(realPath);
-    // page navigation
-    router.get(path, function(req, res, next) {
-        //console.log(req.query);
-        //res.send('haha!');
-        //console.log('GET root');
-        //console.log('router.get(/): ready to get token: ');
-
-        //var token = req.body.token || req.query.token || req.headers['x-access-token'];
-        //var token = req.session.token;
-        var token = req.cookies ? req.cookies.token : undefined;
-
-        if (token) {
-            console.log('router.get(' + routPath + '): get token, ready to verify:');
-            // verifies secret and checks exp
-            jwt.verify(token, secretString, function(err, decoded) {
-                if (err) {
-                    res.redirect('/login');
-                }
-                else {
-                    res.sendFile(realPath);
-                }
-            })
-        }
-        else {
-            //console.log('router.get(/): No token. response login page');
-            res.redirect('/login');
-            //res.sendFile(login_path);
-        }
-    });
-}
-
-initializePage('/');
-initializePage('/party');
-*/
+var browse_path = path.join(__dirname, '..', '..', 'client', 'views', 'browse.html');
+var header_path = path.join(__dirname, '..', '..', 'client', 'views', 'header.html');
 
 // page navigation
 router.get('/', function(req, res, next) {
@@ -101,7 +60,7 @@ router.get('/', function(req, res, next) {
     }
 });
 
-router.get('/party', function(req, res, next) {
+router.get('/browse', function(req, res, next) {
     var token = req.cookies ? req.cookies.token : undefined;
     if (token) {
         // verifies secret and checks exp
@@ -110,7 +69,26 @@ router.get('/party', function(req, res, next) {
                 res.redirect('/login');
             }
             else {
-                res.sendFile(party_path);
+                res.sendFile(browse_path);
+            }
+        })
+    }
+    else {
+        res.redirect('/login');
+    }
+});
+
+// template
+router.get('/header', function(req, res, next) {
+    var token = req.cookies ? req.cookies.token : undefined;
+    if (token) {
+        // verifies secret and checks exp
+        jwt.verify(token, secretString, function(err, decoded) {
+            if (err) {
+                res.redirect('/login');
+            }
+            else {
+                res.sendFile(header_path);
             }
         })
     }
@@ -467,8 +445,53 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
   purpose: 回傳 stores
   path: /api/v1/stores
   method: GET
+  param: token
+  res.body: {
+      success: boolean,
+      message: string,
+      stores: [
+          {
+              id,
+              name,
+              phone_number,
+              create_date,
+              min_spending,
+              image
+          },
+          { ... }
+      ]
+  }
 */
-// todo
+router.get('/api/v1/stores', function (req, res) {
+    var results = [];
+    pg.connect(connectionString, function(err, client, done) {
+        var queryString = queryPackage.queryStores;
+
+        var query = client.query(queryString);
+
+        if (err) {
+            return res.json({
+                success: false,
+                message: err
+            });
+        }
+
+        query.on('row', function(row) {
+            results.push(row);
+        });
+
+        // After all data is returned, close connection and return results
+        query.on('end', function() {
+            client.end();
+            //console.log(results);
+            return res.json({
+                success: true,
+                message: '',
+                stores: results
+            });
+        });
+    });
+});
 
 
 /*
@@ -671,7 +694,6 @@ router.get('/api/v1/party/:party_id/orders', function (req, res) {
 
     var results = [];
     pg.connect(connectionString, function(err, client, done) {
-        // todo: SQL statement
         var queryString = 'SELECT order_id, users.user_id AS user_id, users.name AS user_name, product, price, TO_CHAR(orders.create_date, \'yyyy-mm-dd hh:mm:ss\') AS create_date FROM orders, users WHERE (users.user_id = orders.user_id);';
 
         var query = client.query(queryString);
@@ -760,20 +782,12 @@ router.get('/api/v1/party/:party_id/orders', function (req, res) {
 */
 router.get('/api/v1/store/:store_id/products', function (req, res) {
     var storeID = req.params.store_id;
-    var organizationID = req.query.organizationID;
 
     if (!storeID) {
       return res.json({
           success: false,
           message: 'storeID is not defined !'
       })
-    }
-
-    if (!organizationID) {
-        return res.json({
-            success: false,
-            message: 'organizationID is not defined !'
-        })
     }
 
     var results = [];
@@ -866,20 +880,12 @@ router.get('/api/v1/store/:store_id/products', function (req, res) {
 */
 router.get('/api/v1/product/:product_id/comments', function (req, res) {
     var productID = req.params.product_id;
-    var organizationID = req.query.organizationID;
 
     if (!productID) {
       return res.json({
           success: false,
           message: 'productID is not defined !'
       })
-    }
-
-    if (!organizationID) {
-        return res.json({
-            success: false,
-            message: 'organizationID is not defined !'
-        })
     }
 
     var results = [];
@@ -915,82 +921,5 @@ router.get('/api/v1/product/:product_id/comments', function (req, res) {
     });
 });
 
-
-// template, remove in future
-router.put('/api/v1/todos/:todo_id', function(req, res) {
-
-    var results = [];
-
-    // Grab data from the URL parameters
-    var id = req.params.todo_id;
-
-    // Grab data from http request
-    var data = {text: req.body.text, complete: req.body.complete};
-
-    // Get a Postgres client from the connection pool
-    pg.connect(connectionString, function(err, client, done) {
-
-        // SQL Query > Update Data
-        client.query("UPDATE items SET text=($1), complete=($2) WHERE id=($3)", [data.text, data.complete, id]);
-
-        // SQL Query > Select Data
-        var query = client.query("SELECT * FROM items ORDER BY id ASC");
-
-        // Stream results back one row at a time
-        query.on('row', function(row) {
-            results.push(row);
-        });
-
-        // After all data is returned, close connection and return results
-        query.on('end', function() {
-            client.end();
-            return res.json(results);
-        });
-
-        // Handle Errors
-        if(err) {
-          console.log(err);
-        }
-
-    });
-});
-
-// template, remove in future
-router.delete('/api/v1/todos/:todo_id', function(req, res) {
-
-    var results = [];
-
-    // Grab data from the URL parameters
-    var id = req.params.todo_id;
-
-
-    // Get a Postgres client from the connection pool
-    pg.connect(connectionString, function(err, client, done) {
-
-        // SQL Query > Delete Data
-        client.query("DELETE FROM items WHERE id=($1)", [id]);
-
-        // SQL Query > Select Data
-        var query = client.query("SELECT * FROM items ORDER BY id ASC");
-
-        // Stream results back one row at a time
-        query.on('row', function(row) {
-            results.push(row);
-        });
-
-        // After all data is returned, close connection and return results
-        query.on('end', function() {
-            client.end();
-            return res.json(results);
-        });
-
-        // Handle Errors
-        if(err) {
-          console.log(err);
-        }
-
-    });
-
-});
 
 module.exports = router;

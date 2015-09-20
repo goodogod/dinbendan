@@ -8,7 +8,7 @@
     <!-- link href="material/css/material.min.css" rel="stylesheet" media="screen" -->
     <link href="stylesheets/style.css" rel="stylesheet" media="screen">
   </head>
-  <body ng-controller="mainController">
+  <body>
 
     <!--
     View structures:
@@ -18,40 +18,9 @@
     -->
     <div class="container">
       <!-- navbar -->
-      <div class="main-navbar">
-        <div class="row">
-          <div class="navbar navbar-inverse">
-              <div class="navbar-header">
-                  <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
-                      <span class="icon-bar"></span>
-                      <span class="icon-bar"></span>
-                      <span class="icon-bar"></span>
-                  </button>
-                  <a class="navbar-brand" href="" ng-click="clickMainTitle()">便當來了</a>
-              </div>
-              <div class="navbar-collapse collapse navbar-responsive-collapse">
-                  <ul class="nav navbar-nav">
-                      <li><a href="javascript:void(0)">統計</a></li>
-                      <li>
-                        <a href="" ng-click="clickCreateParty()">建立 Party</a>
-                      </li>
+      <div ng-include="'header'"></div>
 
-                  </ul>
-                  <ul class="nav navbar-nav navbar-right">
-                      <li class="dropdown">
-                          <a href="bootstrap-elements.html" data-target="#" class="dropdown-toggle" data-toggle="dropdown">{{userInfo.userName}} <b class="caret"></b></a>
-                          <ul class="dropdown-menu">
-                              <li><a class="logout" href="javascript:void(0)">Log out</a></li>
-                              <li class="divider"></li>
-                          </ul>
-                      </li>
-                  </ul>
-              </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="main-view">
+      <div class="main-view" ng-controller="mainController">
         <!-- week-bar: 1 2 2 2 2 2 1 -->
         <div class="row">
           <ul class="nav nav-tabs">
@@ -61,6 +30,7 @@
           </ul>
         </div>
 
+        <!-- Empty row -->
         <div class="row">
           </br>
         </div>
@@ -106,7 +76,7 @@
                 <p>評論</p>
                 <ul>
                   <li ng-repeat="comment in selectProductComments">
-                    <a>{{comment.user_name}}</a>
+                    <a href="">{{comment.user_name}}</a>
                     <p>分數：{{comment.stars}}</p>
                     <p>{{comment.text}}</p>
                   </li>
@@ -147,7 +117,7 @@
                         <td>
                           <span class="tag label label-success" ng-repeat="user in orderSummary.users">
                             <span>{{user.name}}</span>
-                            <a ng-show="userInfo.userID == user.id"><i class="remove glyphicon glyphicon-remove-sign glyphicon-white"></i></a>
+                            <a ng-show="userID == user.id"><i class="remove glyphicon glyphicon-remove-sign glyphicon-white"></i></a>
                           </span>
                           <!-- a ng-repeat="user in orderSummary.users" href="javascript:void(0)">
                             {{user.name}}

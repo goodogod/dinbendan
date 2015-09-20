@@ -1,3 +1,4 @@
+/* global docCookies */
 'use strict';
 
 
@@ -5,31 +6,97 @@
 $(document).ready(function() {
     //alert('ready !');
     //$.material.init();
-
-    $('.logout').click(function () {
-        //alert('logout click !');
-        // log out
-        docCookies.setItem('token', undefined);
-        docCookies.setItem('userID', undefined);
-        docCookies.setItem('organizationID', undefined);
-        window.location.href = '/';
-    });
 });
+
+/*
+ *  Return: { token: string, organizationID: string, userID: string }
+ */
+function getInfoFromCookies (cookies) {
+    var token = cookies.getItem('token');
+    var organizationID = cookies.getItem('organizationID');
+    var userID = cookies.getItem('userID');
+    
+    return { token: token, organizationID: organizationID, userID: userID };
+}
+
+/*
+ * Get stores.
+ * Return: [ { id, name }, { ... }, ... ]
+ */
+function getStoresList($http, token, outStoresList) {
+    var req = {
+        method: 'GET',
+        url: '/api/v1/stores',
+        params: {
+            token:  token
+        }
+    }
+
+    $http(req).success(function (response) {
+        if (response.success) {
+            for (var i = 0; i < response.stores.length; i++) {
+                outStoresList.push(response.stores[i]);
+            }
+        }
+    });
+}
+
+/*
+ * Get products list by storeID.
+ * Return: [ { product_id, product_name, store_id, price }, { ... }, ... ]
+ */
+function getProductsList($http, token, storeID, outProductsList) {
+    
+    var req = {
+        method: 'GET',
+        url: '/api/v1/store/' + storeID + '/products',
+        params: {
+            token: token
+        }
+    };
+    $http(req).success(function (response) {
+        if (response.success) {
+            for (var i = 0; i < response.products.length; i++) {
+                outProductsList.push(response.products[i]);
+            }
+        }
+    });
+}
+
+/*
+ * Get comments list.
+ */
+function getCommentsList($http, token, productID, outCommentsList) {
+    var req = {
+        method: 'GET',
+        url: '/api/v1/product/' + productID + '/comments',
+        params: {
+            token: token
+        }
+    };
+    $http(req).success(function (response) {
+        if (response.success) {
+            for (var i = 0; i < response.comments.length; i++) {
+                outCommentsList.push(response.comments[i]);
+            }
+        }
+    });
+}
 
 // create angular module
 angular.module('main', [])
-.controller('mainController', function ($scope, $http) {
 
-    // verify id
-    var token = docCookies.getItem('token');
-    var organizationID = docCookies.getItem('organizationID');
-    var userID = docCookies.getItem('userID');
-
-    //$scope.activePage = 'mainView';
-
-    // initialize all scope variables
-
-    $scope.organizationID = organizationID;
+/*======================================================
+  Control navbar.
+======================================================*/
+.controller('headerController', function ($scope, $http) {
+    
+    var info = getInfoFromCookies(docCookies);
+    var token = info.token;
+    var organizationID = info.organizationID;
+    var userID = info.userID;
+    
+    // todo: extract to common module
     $scope.userInfo = {
         userName: undefined,
         userID: undefined,
@@ -70,6 +137,47 @@ angular.module('main', [])
         }
     };
     $scope.userInfo.updateUserInfo(userID);
+    
+    // Title redirection
+    $scope.clickMainTitle = function () {
+        window.location.href = '/';
+    }
+
+    // Party redirection
+    $scope.clickBrowse = function () {
+        window.location.href = '/browse';
+        //alert('Create party !');
+        //$('#createPartyModal').on('shown.bs.modal', function () {
+        //    $('#myInput').focus()
+        //});
+    };
+    
+    $scope.clickLogout = function() {
+        docCookies.setItem('token', undefined);
+        docCookies.setItem('userID', undefined);
+        docCookies.setItem('organizationID', undefined);
+        window.location.href = '/';
+    };
+})
+
+/*======================================================
+  Control main page.
+======================================================*/
+.controller('mainController', function ($scope, $http) {
+    
+    // verify id
+    var info = getInfoFromCookies(docCookies);
+    var token = info.token;
+    var organizationID = info.organizationID;
+    var userID = info.userID;
+
+    //$scope.activePage = 'mainView';
+
+    // initialize all scope variables
+    $scope.userID = userID;
+    $scope.organizationID = organizationID;
+    
+    // todo: extract to common module
 
     /*******************************
      format: [ { party_id, create_date: Date, expired_date: Date }, ...]
@@ -167,7 +275,7 @@ angular.module('main', [])
     $scope.userInOrderSummaries = function() {
         for (var i = 0; i < $scope.orderSummaries.length; i++) {
                 for (var j = 0; j < $scope.orderSummaries[i].users.length; j++) {
-                        if ($scope.orderSummaries[i].users[j].id == $scope.userInfo.userID) {
+                        if ($scope.orderSummaries[i].users[j].id == userID) {
                         return true;
                     }
                 }
@@ -191,18 +299,16 @@ angular.module('main', [])
     $scope.productsList = [];
     $scope.updateProductsListAndOrderSummaries = function (productsList, storeID, token, organizationID) {
         productsList = [];
+        
         var req = {
             method: 'GET',
             url: '/api/v1/store/' + storeID + '/products',
             params: {
-                token:          token,
-                userID:         userID,
-                organizationID: organizationID
+                token: token
             }
         };
         $http(req).success(function (response) {
             if (response.success) {
-                //productsList = response.products;
                 for (var i = 0; i < response.products.length; i++) {
                     productsList.push(response.products[i]);
                 }
@@ -380,18 +486,6 @@ angular.module('main', [])
         });
     };
 
-    $scope.clickMainTitle = function () {
-        window.location.href = '/';
-    }
-
-    $scope.clickCreateParty = function () {
-        window.location.href = '/party';
-        //alert('Create party !');
-        //$('#createPartyModal').on('shown.bs.modal', function () {
-        //    $('#myInput').focus()
-        //});
-    };
-
 
     // display today
     // 0 ~ 6
@@ -419,7 +513,7 @@ angular.module('main', [])
         method: 'GET',
         url: reqUrl,
         params: {
-            token: token,
+            token:          token,
             userID:         userID,
             organizationID: organizationID
         }
@@ -464,5 +558,75 @@ angular.module('main', [])
             $("li.today-party").first().addClass('active');
         }
     }
+})
+
+.controller('browseController', function ($scope, $http) {
+    
+    var info = getInfoFromCookies(docCookies);
+    var token = info.token;
+    var organizationID = info.organizationID;
+    var userID = info.userID;
+    
+    // todo: handle browse request
+    
+    /*
+     * storesList: Array
+     * store: { id, name, phone_number, create_date, min_spending, image }
+     */
+    $scope.storesList = [];
+    getStoresList($http, token, $scope.storesList);
+    
+    $scope.selectStore = null;
+    
+    $scope.clickStore = function (storeIndex) {
+        //alert('Enter clickStore');
+        if ($scope.selectStore) {
+            $scope.selectStore = null;
+            $scope.selectProduct = null;
+            $scope.productsList.length = 0;
+            $scope.selectProductComments.length = 0;
+        }
+        else {
+            $scope.selectStore = $scope.storesList[storeIndex];
+            $scope.productsList.length = 0;
+            getProductsList($http, token, $scope.selectStore.id, $scope.productsList);
+        }
+    };
+    
+    /*
+     * productsList: Array
+     * products: [ { product_id, product_name, store_id, price }, { ... }, ... ]
+     */
+    $scope.productsList = [];
+    $scope.selectProduct = null;
+    
+    $scope.clickProduct = function (productIndex) {
+        if ($scope.selectProduct) {
+            $scope.selectProduct = null;
+            $scope.selectProductComments.length = 0;
+        }
+        else {
+            $scope.selectProduct = $scope.productsList[productIndex];
+            $scope.selectProductComments.length = 0;
+            getCommentsList($http, token, $scope.selectProduct.product_id, $scope.selectProductComments);
+        }
+    };
+    
+    /*
+     * comments: [
+            {
+                comment_id: integer,
+                product_id: integer,
+                product_name: string,
+                user_id: integer,
+                user_name: string,
+                text: string, // markdown
+                date: string,
+                stars: integer
+            },
+            ...
+        ]
+     */
+    $scope.selectProductComments = [];
 });
 
