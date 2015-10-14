@@ -21,12 +21,22 @@ var query = client.query(
         'image VARCHAR(512))'
 );
 
+// define unique column
+var query = client.query(
+    'ALTER TABLE users ADD UNIQUE (name);'
+);
+
 // Create Organizations table
 var query = client.query(
     'CREATE TABLE organizations(' +
         'organization_id SERIAL PRIMARY KEY,' +
         'name VARCHAR(32) not null,' +
         'create_date TIMESTAMP not null)'
+);
+
+// define unique column
+var query = client.query(
+    'ALTER TABLE organizations ADD UNIQUE (name);'
 );
 
 // Create organization_creators
@@ -54,6 +64,11 @@ var query = client.query(
         'create_date TIMESTAMP,' +
         'image VARCHAR(512),' +
         'min_spending NUMERIC(12, 2))'
+);
+
+// define unique column
+var query = client.query(
+    'ALTER TABLE stores ADD UNIQUE (name);'
 );
 
 // products table

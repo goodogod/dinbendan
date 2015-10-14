@@ -2,14 +2,14 @@ var express = require('express');
 var router = express.Router();
 var path = require('path');
 var pg = require('pg');
-var fs = require('fs');
+var fs = require('fs-extra');
 var jwt = require('jsonwebtoken'); // used to create, sign, and verify tokens
+var AWS = require('aws-sdk');
+var uuid = require('node-uuid');
+var zlib = require('zlib');
 var queryPackage = require('../../models/query.js');
 //var session = require('express-session');
 var connectionString = require(path.join(__dirname, '../../', 'config'));
-
-var secretString = 'haha';
-
 
 // First, checks if it isn't implemented yet.
 if (!String.prototype.format) {
@@ -25,10 +25,40 @@ if (!String.prototype.format) {
 }
 /* ex: "{0} is dead, but {1} is alive! {0} {2}".format("ASP", "ASP.NET") */
 
+function getUniqName() {
+    return uuid.v4().replace(/-/g, '');
+}
+
+var secretString = 'haha';
+
+// AWS env
+var S3_BUCKET =             process.env.S3_BUCKET;
+var AWS_ACCESS_KEY =        process.env.AWS_ACCESS_KEY_ID;
+var AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY;
+AWS.config.update({
+    accessKeyId:     AWS_ACCESS_KEY, 
+    secretAccessKey: AWS_SECRET_ACCESS_KEY
+});
+
+/*
+var s3 = new AWS.S3();
+s3.listBuckets(function(err, data) {
+  if (err) { console.log("Error:", err); }
+  else {
+    for (var index in data.Buckets) {
+      var bucket = data.Buckets[index];
+      console.log("Bucket: ", bucket.Name, ' : ', bucket.CreationDate);
+    }
+  }
+});
+*/
+//AWS.config.region = 'Tokyo';
+
 var index_path = path.join(__dirname, '..', '..', 'client', 'views', 'index.html');
 var login_path = path.join(__dirname, '..', '..', 'client', 'views', 'login.html');
 var browse_path = path.join(__dirname, '..', '..', 'client', 'views', 'browse.html');
 var header_path = path.join(__dirname, '..', '..', 'client', 'views', 'header.html');
+var file_up_path = path.join(__dirname, '..', '..', 'client', 'views', 'file-upload.html');
 
 // page navigation
 router.get('/', function(req, res, next) {
@@ -89,6 +119,24 @@ router.get('/header', function(req, res, next) {
             }
             else {
                 res.sendFile(header_path);
+            }
+        })
+    }
+    else {
+        res.redirect('/login');
+    }
+});
+
+router.get('/file-upload', function(req, res, next) {
+    var token = req.cookies ? req.cookies.token : undefined;
+    if (token) {
+        // verifies secret and checks exp
+        jwt.verify(token, secretString, function(err, decoded) {
+            if (err) {
+                res.redirect('/login');
+            }
+            else {
+                res.sendFile(file_up_path);
             }
         })
     }
@@ -565,9 +613,7 @@ router.post('/api/v1/order', function (req, res) {
     // [ { id: integer, name: string, price: integer }, ... ]
     var productsInStore = [];
     pg.connect(connectionString, function(err, client, done) {
-        //console.log('connect OK');
         var queryString = queryPackage.queryProductsListByStoreID_F1.format(uiStoreID);
-        //console.log(queryString);
         var query = client.query(queryString);
 
         if (err) {
@@ -578,7 +624,6 @@ router.post('/api/v1/order', function (req, res) {
         }
 
         query.on('row', function(row) {
-            //console.log('ROW: ' + JSON.stringify(row));
             productsInStore.push({
                 id: parseInt(row.id),
                 name: row.name,
@@ -587,7 +632,6 @@ router.post('/api/v1/order', function (req, res) {
         });
 
         query.on('end', function() {
-            //console.log('enter OK');
             client.end();
 
             // exist/new/incorrect
@@ -750,17 +794,197 @@ router.get('/api/v1/party/:party_id/orders', function (req, res) {
   method: POST
   req.body: {
     name: string,
-    phoneNumber: string,
+    phone_number: string,
     image: string,
-    createDate,
-    minSpending
+    min_spending
   }
   res: {
     success: boolean,
-    storeID: integer
+    store_id: integer
   }
 */
-// todo
+router.post('/api/v1/store', function (req, res) {
+    var uiName = req.body.name;
+    var uiPhoneNumber = req.body.phone_number;
+    var uiImagePath = req.body.image;
+    var uiCreateDate; // get current date. format: yyyy-mm-dd hh:mm:ss
+    var uiMinSpending = req.body.min_spending;
+    
+    var cols = [];
+    var vals = [];
+    var newStoreID = undefined;
+    
+    // todo: read uploaded file.
+    
+    pg.connect(connectionString, function(err, client, done) {
+        var queryString = queryPackage.insertStore_F2.format(
+            queryPackage.arrayToSQLInsertString(cols), 
+            queryPackage.arrayToSQLInsertString(vals));
+        var query = client.query(queryString);
+
+        if (err) {
+            return res.json({
+                success: false,
+                message: err
+            });
+        }
+
+        query.on('row', function(row) {
+            newStoreID = row.store_id;
+        });
+
+        query.on('end', function() {
+            client.end();
+            return res.json({
+                success: true,
+                message: '',
+                store_id: newStoreID
+            });
+        });
+    });
+});
+
+/*
+  purpose: modify store
+  path: /api/v1/store
+  metod: PUT
+  image: multipart/form-data
+  req.body: {
+    name: string (optional),
+    phone_number: string (optional),
+    min_spending (optional)
+  }
+*/
+router.put('/api/v1/store/:store_id', function (req, res) {
+    var uiStoreID = req.params.store_id;
+    var uiName = req.body.name;
+    var uiPhoneNumber = req.body.phone_number;
+    var uiMinSpending = req.body.min_spending;
+    
+    var colList = [];
+    var valList = [];
+    
+    if (uiName) {
+        colList.push('name');
+        valList.push(uiName);
+    }
+    
+    if (uiPhoneNumber) {
+        colList.push('phone_number');
+        valList.push(uiPhoneNumber);
+    }
+    
+    if (uiMinSpending) {
+        colList.push('min_spendiing');
+        valList.push(uiMinSpending);
+    }
+    
+    
+    // todo: prevent illegal request field
+    
+    // upload file
+    if (req.busboy) {
+        var uniqName = getUniqName();
+        
+        var fstream;
+        req.pipe(req.busboy);
+        req.busboy.on('file', function (fieldname, file, filename) {
+            console.log("Uploading: " + filename);
+            
+            var s3Key = uniqName + '/' + filename;        
+            
+            // temp save to root/server/img
+            var imgDir = path.join(__dirname, '..', 'img', getUniqName());
+            fs.mkdirsSync(imgDir);
+            var tmpFile = path.join(imgDir, filename);
+            fstream = fs.createWriteStream(tmpFile);
+            file.pipe(fstream);
+            fstream.on('close', function () {  
+                // send to S3
+                console.log('Sending to S3 ...');
+                var body = fs.createReadStream(tmpFile) /* .pipe(zlib.createGzip()) */;
+                var params = {Bucket: S3_BUCKET, Key: s3Key, Body: body};
+                var s3 = new AWS.S3();
+                //var file = fs.createReadStream(tmpFile);
+                s3.upload(params, function (err, data) {
+                    if (err) {
+                        console.log("Error uploading data: ", err);
+                    } 
+                    else {
+                        console.log("Successfully uploaded data to " + S3_BUCKET + '/' + s3Key);
+                    }
+                })
+                .on('httpUploadProgress', function(evt) { 
+                    console.log(evt); 
+                })
+                .send(function(err, data) { 
+                    console.log(err, data);
+                    
+                    // remove tmp file
+                    if (fs.existsSync(imgDir)) {
+                        fs.removeSync(imgDir);
+                    }
+                
+                    // response
+                    console.log("Upload Finished of " + filename);
+                    
+                    // todo: write image URL to DB
+                    colList.push('image');
+                    valList.push('\'' + data.Location + '\'');
+                    
+                    pg.connect(connectionString, function(err, client, done) {
+                        var queryString = 'UPDATE stores SET {0} WHERE store_id = {1};'.format(queryPackage.arrayToSQLUpdateString(colList, valList), uiStoreID);
+                        console.log(queryString);
+                        var query = client.query(queryString);
+                
+                        if (err) {
+                            return res.json({
+                                success: false,
+                                message: err
+                            });
+                        }
+                
+                        // After all data is returned, close connection and return results
+                        query.on('end', function() {
+                            client.end();
+                            return res.json({
+                                success: true,
+                                message: 'Update OK.'
+                            });
+                        });
+                    });
+                
+                });
+            });
+        });
+    } // end of busboy (streaming)
+    else if (colList.length > 0) {
+        pg.connect(connectionString, function(err, client, done) {
+            var queryString = 'UPDATE stores SET {0} WHERE store_id = {1};'.format(queryPackage.arrayToSQLUpdateString(colList, valList), uiStoreID);
+            console.log(queryString);
+            var query = client.query(queryString);
+    
+            if (err) {
+                return res.json({
+                    success: false,
+                    message: err
+                });
+            }
+    
+            // After all data is returned, close connection and return results
+            query.on('end', function() {
+                client.end();
+                //console.log(results);
+                return res.json({
+                    success: true,
+                    message: 'Update OK.'
+                });
+            });
+        });
+    }
+});
+    
+
 
 /*
   purpose: 查看 store products list
