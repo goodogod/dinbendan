@@ -69,6 +69,10 @@ angular.module('main')
         //});
     };
     
+    $scope.clickRecharge = function () {
+        window.location.href = '/recharge';
+    }
+    
     $scope.clickLogout = function() {
         docCookies.setItem('token', undefined);
         docCookies.setItem('userID', undefined);

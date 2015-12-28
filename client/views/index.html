@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <html ng-app="main">
-  <head>
+
+<head>
     <title>便當來了</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- styles -->
     <link href="http://netdna.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel="stylesheet" media="screen">
     <!-- link href="material/css/material.min.css" rel="stylesheet" media="screen" -->
     <link href="stylesheets/style.css" rel="stylesheet" media="screen">
-  </head>
-  <body>
+</head>
+
+<body>
 
     <!--
     View structures:
@@ -17,166 +19,252 @@
       * main-view/party-view
     -->
     <div class="container">
-      <!-- navbar -->
-      <div ng-include="'header'"></div>
+        <!-- navbar -->
+        <div ng-include="'header'"></div>
 
-      <div class="main-view" ng-controller="mainController">
-        <!-- week-bar: 1 2 2 2 2 2 1 -->
-        <div class="row">
-          <ul class="nav nav-tabs">
-            <li role="presentation" ng-repeat="day in daysInWeek" ng-class="{ active: $index == todayDay }">
-              <a href="javascript:void(0)">{{day | date: medium}}</a>
-            </li>
-          </ul>
-        </div>
-
-        <!-- Empty row -->
-        <div class="row">
-          </br>
-        </div>
-
-        <!-- parties-list; show as tab list -->
-        <div class="row">
-          <ul class="nav nav-pills" class="today-parties">
-            <li class="today-party" ng-repeat="todayParty in todayParties" ng-class="{active: todayParties[$index].active}">
-              <a href="javascript:void(0)">{{todayParty.name}}</a>
-            </li>
-          </ul>
-
-        </div>
-
-        <!-- party and orders info -->
-        <div class="row">
-          <!-- product-info -->
-          <div class="col-md-4">
-            <!-- store info -->
-            <div ng-show="selectOrderSummary == null">
-              <p>{{storeName}}</p>
-            </div>
-
-            <div ng-show="selectOrderSummary != null" class="product-info">
-              <!-- p>Product Info</p -->
-              <!-- product name -->
-              <div class="row">
-                <p>學名：{{selectOrderSummary.product}}</p>
-              </div>
-
-              <!-- product price -->
-              <div class="row">
-                <p>售價：{{selectOrderSummary.price}}</p>
-              </div>
-
-              <!-- rate -->
-              <div class="row">
-                <!-- p>分數：{{selectOrderSummary.rate}}</p -->
-              </div>
-
-              <!-- comments list -->
-              <div class="row">
-                <p>評論</p>
-                <ul>
-                  <li ng-repeat="comment in selectProductComments">
-                    <a href="">{{comment.user_name}}</a>
-                    <p>分數：{{comment.stars}}</p>
-                    <p>{{comment.text}}</p>
-                  </li>
+        <div class="main-view" ng-controller="mainController">
+            <!-- week-bar: 1 2 2 2 2 2 1 -->
+            <div class="row">
+                <ul class="nav nav-tabs">
+                    <li role="presentation" ng-repeat="day in daysInWeek" ng-class="{ active: $index == todayDay }">
+                        <a href="javascript:void(0)">{{day | date: medium}}</a>
+                    </li>
                 </ul>
-              </div>
             </div>
-          </div>
-          <!-- party-info -->
-          <div class="col-md-8">
-            <div class="party-info">
-              <!-- search input -->
-              <div class="row search-orders">
-                <form class="navbar-form navbar-left">
-                  <input type="text" class="form-control col-lg-8" placeholder="快速搜尋">
-                </form>
-              </div>
 
-              <!-- orders list -->
-              <div class="row">
-                <div class="orders-list">
-                  <!-- table -->
-                  <table class="table table-striped table-hover ">
-                    <thead>
-                      <tr>
-                        <th>吃什麼</th>
-                        <th>價錢</th>
-                        <th>誰訂了</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr ng-repeat="orderSummary in orderSummaries" ng-class="{info: orderSummary === selectOrderSummary}">
-                        <td>
-                          <a href="" ng-click="clickOrder(orderSummary)">
-                            {{orderSummary.product}}
-                          </a>
-                        </td>
-                        <td>{{orderSummary.price}}</td>
-                        <td>
-                          <span class="tag label label-success" ng-repeat="user in orderSummary.users">
-                            <span>{{user.name}}</span>
-                            <a ng-show="userID == user.id"><i class="remove glyphicon glyphicon-remove-sign glyphicon-white"></i></a>
-                          </span>
-                          <!-- a ng-repeat="user in orderSummary.users" href="javascript:void(0)">
-                            {{user.name}}
-                          </a -->
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+            <!-- Empty row -->
+            <div class="row">
+                </br>
+            </div>
 
-              <!-- ready to order -->
-              <div class="row">
-                <form name="orderForm" ng-submit="inputOrder.submitOrder()">
-                  <!-- ready to order -->
-                  <div class="col-md-10">
-                      <input type="text" name="inputProduct" placeholder="菜單上沒有？直接輸入" ng-model="inputOrder.productName" required>
+            <!-- parties-list; show as tab list -->
+            <div class="row">
+                <ul class="nav nav-pills" class="today-parties">
+                    <li class="today-party" ng-repeat="todayParty in todayParties" ng-class="{active: todayParties[$index].active}">
+                        <a href="javascript:void(0)">{{todayParty.name}}</a>
+                    </li>
+                </ul>
 
-                    <!-- verify inputProduct -->
-                    <div role="alert">
-                      <span class="error" ng-show="orderForm.inputProduct.$error.required">
-                        Required!
-                      </span>
+            </div>
+
+            <!-- party and orders info -->
+            <div class="row">
+                <!-- product-info -->
+                <div class="col-md-4 panel panel-default">
+                    <!-- store info -->
+                    <div ng-show="selectOrderSummary == null">
+                        <p>{{activeStore.name}}</p>
+                        <img ng-src="{{ activeStore.image || '//:0' }}" alt="Description" class="img-thumbnail">
                     </div>
 
-                    <label>
-                      金額：
-                      <input type="text" name="inputPrice" placeholder="金額" ng-model="inputOrder.price" required>
-                    </label>
-                    <input type="text" name="inputNote" placeholder="備註" ng-model="inputOrder.note">
-                  </div>
+                    <div ng-show="selectOrderSummary != null" class="product-info">
+                        <!-- p>Product Info</p -->
+                        <!-- product name -->
+                        <div class="row">
+                            <p>學名：{{selectOrderSummary.product}}</p>
+                        </div>
 
-                  <!-- submission -->
-                  <div class="col-md-2">
-                    <input type="submit" id="submit" value="訂購" class="btn btn-success btn-lg"/>
-                  </div>
-                </form>
-              </div>
+                        <!-- product price -->
+                        <div class="row">
+                            <p>售價：{{selectOrderSummary.price}}</p>
+                        </div>
 
-              <!-- ordered and ready to modify -->
-              <!-- div class="row" ng-show="userInOrderSummaries() == true">
+                        <!-- rate -->
+                        <div class="row">
+                            <!-- p>分數：{{selectOrderSummary.rate}}</p -->
+                        </div>
+
+                        <!-- comments list -->
+                        <div class="row">
+                            <p>評論</p>
+                            <ul>
+                                <li ng-repeat="comment in selectProductComments">
+                                    <a href="">{{comment.user_name}}</a>
+                                    <p>分數：{{comment.stars}}</p>
+                                    <p>{{comment.text}}</p>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <!-- party-info -->
+                <div class="col-md-8 panel panel-default">
+                    <div class="party-info">
+
+                        <div class="row">
+                            <!-- search input -->
+                            <div class="search-orders">
+                                <form class="navbar-form navbar-left">
+                                    <input type="text" class="form-control col-lg-8" placeholder="快速搜尋">
+                                </form>
+                            </div>
+
+                            <!-- 結案鈕 -->
+                            <button type="button" class="btn btn-primary pull-right" data-toggle="modal" data-target=".party-result-modal" ng-show="activeParty != null && !activeParty.ready && activePartyResult.visible"
+                            ng-click="activePartyResult.onShow()">結算</button>
+
+                            <!-- 剩餘時間 -->
+                            <div class="pull-right" ng-show="today < activeParty.createDate">
+                                Party 還沒到！
+                            </div>
+                            <div class="pull-right" ng-show="activeParty.createDate <= today && today <= activeParty.expiredDate">
+                                <timer end-time="activeParty.expiredDate">還有 {{hours}} 時, {{minutes}} 分, {{seconds}} 秒 結束。</timer>
+                            </div>
+                            <div class="pull-right" ng-show="activeParty.expiredDate < today">
+                                Party 已過期！
+                            </div>
+
+                            <!-- 統計Modal -->
+                            <div class="modal fade party-result-modal">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                            <h4 class="modal-title">{{ activeParty.name }}</h4>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>店家：{{ activeStore.name }}</p>
+                                            <p>電話：{{ activeStore.phoneNumber }}</p>
+                                            <p>滿多少外送：{{ activeStore.minSpending }}</p>
+                                            <table class="table table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>項目</th>
+                                                        <th>單價</th>
+                                                        <th>數量</th>
+                                                        <th>備註</th>
+                                                    </tr>
+                                                </thead>
+                                                <tr ng-repeat="orderResult in activePartyResult.orderResults">
+                                                    <td>{{orderResult.product}}</td>
+                                                    <td>{{orderResult.price | emptyCountFilter}}</td>
+                                                    <td>{{orderResult.users.length | emptyCountFilter}}</td>
+                                                    <td>
+                                                        <ul>
+                                                            <li ng-repeat="user in orderResult.users">
+                                                                {{user.note | noteFilter}}
+                                                            </li>
+                                                        </ul>
+                                                    </td>
+                                                </tr>
+                                                <tbody>
+
+                                                </tbody>
+
+                                            </table>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-default" data-dismiss="modal">關閉</button>
+                                            <button type="button" class="btn btn-success" ng-click="activePartyResult.onMakePartyReady()">扣款！</button>
+                                        </div>
+                                    </div>
+                                    <!-- /.modal-content -->
+                                </div>
+                                <!-- /.modal-dialog -->
+                            </div>
+                            <!-- /.modal -->
+                        </div>
+                        <!-- orders list -->
+                        <div class="row">
+                            <div class="orders-list">
+                                <!-- table -->
+                                <table class="table table-hover ">
+                                    <thead>
+                                        <tr>
+                                            <th>吃什麼</th>
+                                            <th>價錢</th>
+                                            <th>誰訂了</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr ng-repeat="orderSummary in orderSummaries" ng-class="{info: orderSummary === selectOrderSummary}">
+                                            <td>
+                                                <a href="" ng-click="clickOrder(orderSummary)">
+                            {{orderSummary.product}}
+                          </a>
+                                            </td>
+                                            <td>{{orderSummary.price}}</td>
+                                            <td>
+                                                <span class="tag label label-success" ng-repeat="user in orderSummary.users">
+                            <span>{{user.name}}</span>
+                                                <a ng-show="userID == user.id && activeParty.ready == false" ng-click="orderSummaries.onDeleteOrder(user)"><i class="remove glyphicon glyphicon-remove-sign glyphicon-white"></i></a>
+                                                </span>
+                                                <!-- a ng-repeat="user in orderSummary.users" href="javascript:void(0)">
+                            {{user.name}}
+                          </a -->
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- ready to order -->
+                        <div class="row">
+                            <form name="orderForm" ng-submit="inputOrder.submitOrder()">
+                                <!-- ready to order -->
+                                <div class="col-md-10">
+                                    <div class="form-group">
+                                        <label>菜單：
+                                            <input type="text" name="inputProduct" placeholder="菜單上沒有？直接輸入" ng-model="inputOrder.productName" required>
+                                            <!-- verify inputProduct -->
+                                            <!-- span role="alert" class="error" ng-show="orderForm.inputProduct.$error.required">
+                            Required!
+                          </span -->
+                                        </label>
+
+
+                                        <label>
+                                            金額：
+                                            <input type="text" name="inputPrice" placeholder="金額" ng-model="inputOrder.price" required>
+                                        </label>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>備註：</label>
+                                        <input type="text" name="inputNote" placeholder="如有特殊需求可在此說明" ng-model="inputOrder.note" class="form-control">
+                                    </div>
+                                </div>
+
+                                <div class="col-md-2">
+                                    <!-- ready to order -->
+                                    <div class="form-group">
+                                        <!-- submission -->
+                                        <input type="submit" id="submit" value="訂購" class="btn btn-success btn-lg btn-block" />
+                                    </div>
+                                </div>
+
+
+                            </form>
+                        </div>
+
+                        <!-- ordered and ready to modify -->
+                        <!-- div class="row" ng-show="userInOrderSummaries() == true">
                 <p>修改</p>
               </div -->
+                    </div>
+                </div>
             </div>
-          </div>
         </div>
-      </div> <!-- end of main-view -->
+        <!-- end of main-view -->
 
-      <div class="party-view">
+        <div class="party-view">
 
-      </div>
+        </div>
     </div>
 
     <!-- scripts -->
     <!-- script src="http://code.jquery.com/jquery-1.11.2.min.js" type="text/javascript"></script -->
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <!-- script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script -->
+    <script type="text/javascript" src="javascripts/jquery.min.js"></script>
     <script type="text/javascript" src="http://netdna.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js" type="text/javascript"></script>
     <!-- script type="text/javascript" src="material/js/material.min.js"></script -->
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.16/angular.min.js"></script>
+
+    <script type="text/javascript" src="javascripts/moment.min.js"></script>
+    <script type="text/javascript" src="javascripts/locales.min.js"></script>
+    <script type="text/javascript" src="javascripts/humanize-duration.js"></script>
+    <script type="text/javascript" src="javascripts/angular-timer.min.js"></script>
 
     <!-- user scripts -->
     <script src="javascripts/cookies.js"></script>
@@ -184,5 +272,6 @@
     <script src="javascripts/controllers/controller-tools.js"></script>
     <script src="javascripts/controllers/header.js"></script>
     <script src="javascripts/controllers/index.js"></script>
-  </body>
+</body>
+
 </html>

@@ -18,7 +18,7 @@ var query = client.query(
         'create_date TIMESTAMP not null,' +
         'role VARCHAR(32) not null,' +
         'money NUMERIC(12, 2),' +
-        'image VARCHAR(512))'
+        'image VARCHAR(512));'
 );
 
 // define unique column
@@ -31,7 +31,7 @@ var query = client.query(
     'CREATE TABLE organizations(' +
         'organization_id SERIAL PRIMARY KEY,' +
         'name VARCHAR(32) not null,' +
-        'create_date TIMESTAMP not null)'
+        'create_date TIMESTAMP not null);'
 );
 
 // define unique column
@@ -44,7 +44,7 @@ var query = client.query(
     'CREATE TABLE organization_creators(' +
         'id SERIAL PRIMARY KEY,' +
         'creator_id INTEGER REFERENCES users(user_id),' +
-        'organization_id INTEGER  REFERENCES organizations(organization_id))'
+        'organization_id INTEGER  REFERENCES organizations(organization_id));'
 );
 
 // Create user_organization table
@@ -52,7 +52,7 @@ var query = client.query(
     'CREATE TABLE user_organization(' +
         'id SERIAL PRIMARY KEY,' +
         'user_id INTEGER REFERENCES users(user_id),' +
-        'organization_id INTEGER  REFERENCES organizations(organization_id))'
+        'organization_id INTEGER  REFERENCES organizations(organization_id));'
 );
 
 // Stores table
@@ -63,7 +63,8 @@ var query = client.query(
         'phone_number VARCHAR(64),' +
         'create_date TIMESTAMP,' +
         'image VARCHAR(512),' +
-        'min_spending NUMERIC(12, 2))'
+        'min_spending NUMERIC(12, 2)),' +
+        'note VARCHAR(255);'
 );
 
 // define unique column
@@ -77,7 +78,7 @@ var query = client.query(
         'product_id SERIAL PRIMARY KEY,' +
         'store_id INTEGER REFERENCES stores(store_id),' +
         'name VARCHAR(64),' +
-        'price NUMERIC(12, 2))'
+        'price NUMERIC(12, 2));'
 );
 
 // Comments table
@@ -88,7 +89,8 @@ var query = client.query(
         'comment_user_id INTEGER REFERENCES users(user_id),' +
         'text TEXT,' +
         'stars INTEGER,' +
-        'date TIMESTAMP)'
+        'date TIMESTAMP),' +
+        'image VARCHAR(512);'
 );
 
 // parties table
@@ -101,7 +103,7 @@ var query = client.query(
         'name VARCHAR(64),' +
         'create_date TIMESTAMP,' +
         'expired_date TIMESTAMP,' +
-        'ready BOOLEAN)'
+        'ready BOOLEAN);'
 );
 
 // Orders table
@@ -113,7 +115,7 @@ var query = client.query(
         'product VARCHAR(64),' +
         'price NUMERIC(12, 2),' +
         'create_date TIMESTAMP),' +
-        'note VARCHAR(255)'
+        'note VARCHAR(255);'
 );
 
 query.on('end', function() { client.end(); });

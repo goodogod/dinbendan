@@ -10,5 +10,5 @@ $(document).ready(function() {
 
 
 // create angular module
-angular.module('main', []);
+angular.module('main', ['timer']);
 

@@ -1,5 +1,25 @@
 'use strict';
 
+function Party(name, party_id, creator_id, store_id, creator, store, 
+    create_date, expired_date, ready, orders_count) {
+    this.name = name;
+    this.party_id = party_id;
+    this.creator_id = creator_id;
+    this.store_id = store_id;
+    this.creator = creator;
+    this.create_date = create_date;
+    this.expired_date = expired_date;
+    this.ready = ready;
+    this.orders_count = orders_count;
+    this.active = false;
+    
+    this.createDate = new Date(this.create_date);
+    this.expiredDate = new Date(this.expired_date);
+}
+Party.prototype = {
+    constructor: Party
+};
+
 /*======================================================
   Control main page.
 ======================================================*/
@@ -20,6 +40,34 @@ angular.module('main')
     $scope.organizationID = organizationID;
     
     // todo: extract to common module
+    
+    $scope.activeStore = {
+        name: '',
+        phoneNumber: '',
+        image: '',
+        minSpending: 0,
+        
+        initialize: function (storeID) {
+            $http({
+                url: '/api/v1/store/' + storeID,
+                method: 'GET',
+                params: {
+                    token: token
+                }
+            })
+            .success(function (response) {
+                if (response.success) {
+                    $scope.activeStore.name = response.store.name;
+                    $scope.activeStore.phoneNumber = response.store.phone_number;
+                    $scope.activeStore.image = response.store.image;
+                    $scope.activeStore.minSpending = parseInt(response.store.min_spending);
+                } 
+                else {
+                    // todo: error handling
+                }
+            });
+        }
+    };
 
     /*******************************
      format: [ { party_id, create_date: Date, expired_date: Date }, ...]
@@ -34,7 +82,9 @@ angular.module('main')
               users: [
                   {
                       id,
-                      name
+                      name,
+                      note,
+                      orderID
                   },
                   ...
               ]
@@ -43,13 +93,47 @@ angular.module('main')
       ]
     *******************************/
     $scope.orderSummaries = [];
+    $scope.orderSummaries.onDeleteOrder = function (user) {
+        if (confirm('確定要刪除?')) {
+            $http({
+                url: '/api/v1/order/' + user.orderID,
+                method: 'DELETE',
+                params: {
+                    token: token
+                }
+            })
+            .success(function (res) {
+                if (res.success) {
+                    $scope.updateProductsListAndOrderSummaries(
+                        $scope.productsList, 
+                        $scope.activeParty.store_id, 
+                        token, 
+                        organizationID);
+                }
+                else {
+                    console.log(res.message);
+                    console.log(res.exception);
+                    if (res.exception == 'partyWasReady') {
+                        alert('Party 已經結束！');
+                    }
+                    else if (res.exception == 'connectionFailed') {
+                        alert('連線異常，請稍候再試！');
+                    }
+                }
+            })
+            .error(function (res) {
+                // todo: alert error
+            });
+            
+        }
+    };
 
     // 更新 orderSummaries
     $scope.updateOrderSummaries = function (orderSummaries, activeParty, productsList, token, organizationID) {
         orderSummaries.length = 0;
         if ($scope.activeParty) {
             // get orders list
-            var partyID = activeParty.party_id;
+            var partyID = $scope.activeParty.party_id;
             var req = {
                 method: 'GET',
                 url: 'api/v1/party/' + partyID + '/orders',
@@ -69,8 +153,10 @@ angular.module('main')
                             if (curOrder.product == orderSummaries[j].product) {
                                 curSummary = orderSummaries[j];
                                 curSummary.users.push({
-                                    id:   curOrder.user_id,
-                                    name: curOrder.user_name
+                                    id:      curOrder.user_id,
+                                    name:    curOrder.user_name,
+                                    note:    curOrder.note,
+                                    orderID: curOrder.order_id
                                 });
                                 break;
                             }
@@ -84,7 +170,9 @@ angular.module('main')
                             };
                             newSummary.users.push({
                                 id:   curOrder.user_id,
-                                name: curOrder.user_name
+                                name: curOrder.user_name,
+                                note: curOrder.note,
+                                orderID: curOrder.order_id
                             });
                             orderSummaries.push(newSummary);
                         }
@@ -160,6 +248,8 @@ angular.module('main')
         });
     };
 
+    
+    // Class: Party
     /*******************************
     format: {
         name: string,
@@ -172,9 +262,78 @@ angular.module('main')
         expired_date: string,
         ready: boolean,
         orders_count: integer
+        
+        createDate: Date,
+        expiredDate: Date
     }
     *******************************/
     $scope.activeParty = null;
+    
+    
+    $scope.activePartyResult = {
+        visible: true, // todo: 根據權限顯示
+        modalVisible: false,
+        
+        onShow: function() {
+            if (!$scope.activeParty) {
+                return;
+            }
+            $scope.updateProductsListAndOrderSummaries($scope.productsList, $scope.activeParty.store_id, token, organizationID);
+            this.updateOrderResults(this.orderResults);
+            this.modalVisible = true;
+        },
+        
+        /* { product, price, users, note } */
+        orderResults: [],
+        
+        updateOrderResults: function (orderResults) {
+            orderResults.length = 0;
+            $scope.orderSummaries.forEach(function (summary, index, ar) {
+                // write main entry
+                var newOrderResult = angular.copy(summary);
+                orderResults.push(newOrderResult);
+                //orderResults[orderResults.length-1].note = '';
+                /*
+                summary.users.forEach(function (user, index, er) {
+                    if (user.note !== '') {
+                        orderResults.push({
+                            product: '',
+                            price: '',
+                            users: [],
+                            note: user.note
+                        });
+                    }
+                });
+                */
+                // write note entries
+            });
+        },
+        
+        onMakePartyReady: function () {
+            if (confirm('扣款後將無法繼續點餐！是否繼續？')) {
+                $http({
+                    url: '/api/v1/party/' + $scope.activeParty.party_id + '/ready',
+                    method: 'PUT',
+                    params: {
+                        token: token
+                    }
+                })
+                .success(function (res) {
+                    if (res.success) {
+                        alert('扣款成功！');
+                        window.location = '/';
+                    } else {
+                        console.log(res.message);
+                        alert('扣款出現錯誤！');
+                    }
+                })
+                .error(function (res) {
+                    console.log(res.message);
+                    alert('連線錯誤！');
+                });
+            }
+        }
+    };
 
     /*******************************
     format: {
@@ -211,7 +370,7 @@ angular.module('main')
     $scope.selectProductComments = null;
 
     /*******************************
-    selectProductComments: {
+    inputOrder: {
         productName: string,
         price: integer,
         note: string,
@@ -244,9 +403,18 @@ angular.module('main')
 
             $http(req).success(function (response) {
                 if (response.success) {
-                    // todo: update order list
-                    alert(response.order_id);
+                    console.log(response.order_id);
                     $scope.updateProductsListAndOrderSummaries($scope.productsList, $scope.activeParty.store_id, token, organizationID);
+                } else {
+                    console.log(response.message);
+                    console.log(response.exception);
+                    if (response.exception === 'connectionFailed') {
+                        alert('連線錯誤！');
+                    } else if (response.exception === 'partyNotExist') {
+                        alert('請求的 Party 不存在！');
+                    } else if (response.exception === 'partyWasReady') {
+                        alert('Party 已結束！');
+                    }
                 }
             });
 
@@ -266,11 +434,13 @@ angular.module('main')
                 }
                 });
             */
+        },
+        initialize: function () {
+            this.productName = '';
+            this.price = 0;
+            this.note = '';
         }
     };
-
-    // string
-    $scope.storeName = '幸福主';
 
     $scope.clickOrder = function (orderSummary) {
         if ($scope.selectOrderSummary === orderSummary) {
@@ -323,6 +493,13 @@ angular.module('main')
                             //alert(JSON.stringify(response.comments));
                         }
                     });
+                    
+                    // Fill 
+                    $scope.inputOrder.productName = selProductInStore.product_name;
+                    $scope.inputOrder.price = selProductInStore.price;
+                }
+                else {
+                    $scope.inputOrder.initialize();
                 }
             }
         });
@@ -331,7 +508,10 @@ angular.module('main')
 
     // display today
     // 0 ~ 6
-    var today = new Date('2015-7-13 10:00:00'); // for test
+    //var today = new Date('2015-7-13 10:00:00'); // for test
+    var today = new Date();
+    $scope.today = today;
+    
     var baseDate = new Date();
     baseDate.setDate(today.getDate() - today.getDay());
     //alert(baseDate);
@@ -348,8 +528,8 @@ angular.module('main')
     }
 
     // build party main frame
-    var curYear = '2015';
-    var curMonth = '7';
+    var curYear = today.getFullYear();
+    var curMonth = today.getMonth() + 1; // because return value is between 0~11
     var reqUrl = '/api/v1/parties/' + curYear + '/' + curMonth;
     var req = {
         method: 'GET',
@@ -363,33 +543,52 @@ angular.module('main')
 
     $http(req).success(function (response) {
         if (response.success) {
+            //alert(JSON.stringify(response.parties));
+            //console.log('today: ' + today.getTime());
             for (var i = 0; i < response.parties.length; i++) {
-                // response time foramt: yyyy-mm-dd hh:mm:ss
+                // response time format: yyyy-mm-dd hh:mm:ss
                 var start_date = new Date(response.parties[i].create_date);
                 var end_date = new Date(response.parties[i].expired_date);
-                if (start_date.getTime() <= today.getTime()
-                    && today.getTime() <= end_date.getTime()) {
+                //console.log('name: ' + response.parties[i].name);
+                //console.log('today: ' + today.getTime());
+                //console.log('start_date: ' + start_date.getTime());
+                //console.log('end_date: ' + end_date.getTime());
+                //if (start_date.getTime() <= today.getTime()
+                //    && today.getTime() <= end_date.getTime()) {
+                if (start_date.getDate() <= today.getDate() 
+                 && today.getDate() <= end_date.getDate()) {
                     $scope.todayParties.push(response.parties[i]);
 
                     // active first party
                     var lastParty = $scope.todayParties[$scope.todayParties.length-1];
                     lastParty.active = false;
-                    if ($scope.todayParties.length == 1) {
+                    if ($scope.todayParties.length > 0) {
                         $scope.activeParty = lastParty;
-                        lastParty.active = true;
+                        $scope.activeParty = new Party(lastParty.name, lastParty.party_id,
+                            lastParty.creator_id, lastParty.store_id, lastParty.creator,
+                            lastParty.store, lastParty.create_date, lastParty.expired_date,
+                            lastParty.ready, lastParty.orders_count);
+                        //$scope.activeParty.partyStatus
+                        $scope.activeParty.active = true;
+                        //console.log($scope.activeParty.createDate.getMilliseconds());
+                        //console.log($scope.activeParty.expiredDate.getMilliseconds());
+                        //console.log($scope.today.getMilliseconds());
                     }
                 }
                 //alert(start_date);
                 //response[i]
+                
             }
 
             // initialize orderSummaries
-            $scope.updateProductsListAndOrderSummaries($scope.productsList, $scope.activeParty.store_id, token, organizationID);
+            if ($scope.activeParty) {
+                $scope.activeStore.initialize($scope.activeParty.store_id);
+                $scope.updateProductsListAndOrderSummaries($scope.productsList, $scope.activeParty.store_id, token, organizationID);
+            }
 
         } // end of if (response.success)
     });
 
-    //$scope
 
     $scope.layoutDone = function() {
         //alert('done !');
@@ -399,5 +598,25 @@ angular.module('main')
         if ($scope.todayParties.length > 0) {
             $("li.today-party").first().addClass('active');
         }
+    }
+})
+
+.filter('emptyCountFilter', function () {
+    return function (str) {
+        if (str == '') {
+            return '';
+        } else {
+            return str;
+        };
+    }
+})
+
+.filter('noteFilter', function () {
+    return function (str) {
+        if (str == '') {
+            return '';
+        } else {
+            return '1 個：' + str;
+        };
     }
 });

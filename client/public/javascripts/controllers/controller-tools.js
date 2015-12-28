@@ -74,3 +74,37 @@ function getCommentsList($http, token, productID, outCommentsList) {
         }
     });
 }
+
+function getUsersList($http, token, outUsersList, doneEvent) {
+    // todo: /api/v1/users
+    
+    outUsersList.length = 0;
+    
+    var req = {
+        method: 'GET',
+        url: 'api/v1/users',
+        params: {
+            token: token
+        }
+    };
+    
+    $http(req).success(function (response) {
+        if (response.success) {
+            response.users.forEach(function (user, index) {
+                outUsersList.push({
+                    id:             parseInt(user.user_id),
+                    name:           user.user_name,
+                    organizationID: parseInt(user.organization_id),
+                    organization:   user.organization,
+                    createDate:     new Date(user.create_date),
+                    role:           user.role,
+                    money:          parseFloat(user.money)
+                });
+                
+                if (doneEvent) {
+                    doneEvent(outUsersList);
+                }
+            });
+        }
+    });
+}

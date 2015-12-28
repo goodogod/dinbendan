@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" ng-app="main">
+
+<head>
+    <title>便當來了</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- styles -->
+    <link href="http://netdna.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <!-- link href="material/css/material.min.css" rel="stylesheet" media="screen" -->
+    <link href="stylesheets/style.css" rel="stylesheet" media="screen">
+</head>
+
+<body>
+    <div class="container">
+        <!-- navbar -->
+        <div ng-include="'header'"></div>
+
+        <div class="main-view" ng-controller="rechargeController">
+            <div class="filter">
+                <form class="form-inline">
+                    <div class="form-group">
+                        <label>篩選器：</label>
+                        <input type="text" class="form-control" id="userFilter" placeholder="輸入名字或暱稱" ng-model="userFilterValue">
+                    </div>
+                </form>
+            </div>
+
+            <div class="users-view">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>使用者名稱</th>
+                            <th>錢包</th>
+                            <th>儲值</th>
+                        </tr>
+                        
+                        <tr ng-repeat="user in usersList | userFilter:userFilterValue">
+                            <td>{{ user.name }}</td>
+                            <td>{{ user.money | currency }}</td>
+                            <td>
+                                <form class="form-inline">
+                                    <div class="form-group">
+                                        <label class="sr-only" for="InputAmount">Amount (in dollars)</label>
+                                        <div class="input-group">
+                                            <div class="input-group-addon">$</div>
+                                            <input type="text" class="form-control" id="InputAmount" placeholder="輸入金額" ng-model="user.inputAmount">
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary" ng-disabled="user.inputAmount == 0" ng-click="user.recharge()">儲值</button>
+                                </form>
+                                <!--
+                                    <ul class="dropdown-menu">
+                                    <li><a href="#">Action</a></li>
+                                    <li><a href="#">Another action</a></li>
+                                    <li><a href="#">Something else here</a></li>
+                                    <li role="separator" class="divider"></li>
+                                    <li><a href="#">Separated link</a></li>
+                                    <li role="separator" class="divider"></li>
+                                    <li><a href="#">One more separated link</a></li>
+                                </ul>
+                                -->
+                            </td>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+
+        <!--
+        
+        filter
+        user-table
+          (if selected) recharge field    
+        -->
+    </div>
+
+
+    <script type="text/javascript" src="javascripts/jquery.min.js"></script>
+    <script type="text/javascript" src="http://netdna.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js" type="text/javascript"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.16/angular.min.js"></script>
+
+    <script src="javascripts/cookies.js"></script>
+
+    <script src="javascripts/recharge-module.js"></script>
+    <script src="javascripts/controllers/controller-tools.js"></script>
+    <script src="javascripts/controllers/header.js"></script>
+    <script src="javascripts/controllers/recharge.js"></script>
+</body>
+
+</html>

@@ -7,7 +7,7 @@ var jwt = require('jsonwebtoken'); // used to create, sign, and verify tokens
 var AWS = require('aws-sdk');
 var uuid = require('node-uuid');
 var zlib = require('zlib');
-var queryPackage = require('../../models/query.js');
+var sq = require('../../models/query.js');
 //var session = require('express-session');
 var connectionString = require(path.join(__dirname, '../../', 'config'));
 
@@ -25,13 +25,117 @@ if (!String.prototype.format) {
 }
 /* ex: "{0} is dead, but {1} is alive! {0} {2}".format("ASP", "ASP.NET") */
 
+/*
+ * Return UUID name.
+ */
 function getUniqName() {
     return uuid.v4().replace(/-/g, '');
 }
 
+/* 
+ * Upload image from HTTP chunk and return path.
+ * Parameter:
+ *   req: router request.
+ * Return:
+ *   If post file does exist, return path; otherwise, return undefine.
+ */
+function uploadImage(req, after) {
+    if (!req.busboy) {
+        after(undefined);
+        return;
+    }
+    
+    var uniqName = getUniqName();
+    
+    var fstream;
+    req.pipe(req.busboy);
+    req.busboy.on('file', function (fieldname, file, filename) {
+        console.log("Uploading: " + filename);
+        
+        var s3Key = uniqName + '/' + filename;        
+        
+        // temp save to root/server/img
+        var imgDir = path.join(__dirname, '..', 'img', getUniqName());
+        fs.mkdirsSync(imgDir);
+        var tmpFile = path.join(imgDir, filename);
+        fstream = fs.createWriteStream(tmpFile);
+        file.pipe(fstream);
+        fstream.on('close', function () {  
+            // send to S3
+            console.log('Sending to S3 ...');
+            var body = fs.createReadStream(tmpFile) /* .pipe(zlib.createGzip()) */;
+            var params = {Bucket: S3_BUCKET, Key: s3Key, Body: body};
+            var s3 = new AWS.S3();
+            //var file = fs.createReadStream(tmpFile);
+            s3.upload(params, function (err, data) {
+                if (err) {
+                    console.log("Error uploading data: ", err);
+                } 
+                else {
+                    console.log("Successfully uploaded data to " + S3_BUCKET + '/' + s3Key);
+                }
+            })
+            .on('httpUploadProgress', function(evt) { 
+                console.log(evt); 
+            })
+            .send(function(err, data) { 
+                console.log(err, data);
+                
+                // remove tmp file
+                if (fs.existsSync(imgDir)) {
+                    fs.removeSync(imgDir);
+                }
+            
+                // response
+                console.log("Upload Finished of " + filename);
+                
+                after(data.Location);
+            });
+        });
+    });
+}
+
+/*
+ * Get party ready.
+ * Parameter:
+ *   partyID
+ *   thenEvent(): trigger when party is ready.
+ *   errorEvent(exception, message): trigger when party is not ready.
+ *     exception:
+ *       partyNotExist
+ *       partyWasReady
+ *       connectionFailed
+ *     message: string
+ */
+function partyIsReady(partyID, thenEvent, errorEvent) {
+    var result = undefined;
+    pg.connect(connectionString, function (err, client, done) {
+        if (err) {
+            if (errorEvent) {
+                errorEvent('connectionFailed', err);
+            }
+        }
+        var queryString = sq.getPartyInfo_F1.format(partyID);
+        var query = client.query(queryString);
+        query.on('row', function(row) {
+            result = row.ready;
+        });
+        query.on('end', function () {
+            if (result === undefined) {
+                errorEvent('partyNotExist', 'Party does not exit !');
+            } else if (!result) {
+                thenEvent();
+            } else {
+                errorEvent('partyWasReady', 'Party was ready !');
+            }
+        });
+    });
+}
+
+// For json web token.
 var secretString = 'haha';
 
-// AWS env
+// AWS environment.
 var S3_BUCKET =             process.env.S3_BUCKET;
 var AWS_ACCESS_KEY =        process.env.AWS_ACCESS_KEY_ID;
 var AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY;
@@ -40,25 +144,13 @@ AWS.config.update({
     secretAccessKey: AWS_SECRET_ACCESS_KEY
 });
 
-/*
-var s3 = new AWS.S3();
-s3.listBuckets(function(err, data) {
-  if (err) { console.log("Error:", err); }
-  else {
-    for (var index in data.Buckets) {
-      var bucket = data.Buckets[index];
-      console.log("Bucket: ", bucket.Name, ' : ', bucket.CreationDate);
-    }
-  }
-});
-*/
-//AWS.config.region = 'Tokyo';
-
+// Page physical path.
 var index_path = path.join(__dirname, '..', '..', 'client', 'views', 'index.html');
 var login_path = path.join(__dirname, '..', '..', 'client', 'views', 'login.html');
 var browse_path = path.join(__dirname, '..', '..', 'client', 'views', 'browse.html');
 var header_path = path.join(__dirname, '..', '..', 'client', 'views', 'header.html');
 var file_up_path = path.join(__dirname, '..', '..', 'client', 'views', 'file-upload.html');
+var recharge_path = path.join(__dirname, '..', '..', 'client', 'views', 'recharge.html');
 
 // page navigation
 router.get('/', function(req, res, next) {
@@ -145,31 +237,24 @@ router.get('/file-upload', function(req, res, next) {
     }
 });
 
-
-
-/*
-router.post('/', function (req, res) {
-    console.log('router.post(/): req.body: ' + req.body.token);
-    var token = req.body.token || req.query.token || req.headers['x-access-token'];
+router.get('/recharge', function(req, res, next) {
+    var token = req.cookies ? req.cookies.token : undefined;
     if (token) {
-        console.log('router.get(/): get token, ready to verify:');
         // verifies secret and checks exp
         jwt.verify(token, secretString, function(err, decoded) {
             if (err) {
                 res.redirect('/login');
             }
             else {
-                res.sendFile(index_path);
+                res.sendFile(recharge_path);
             }
         })
     }
     else {
-        console.log('router.get(/): No token. response login page');
         res.redirect('/login');
-        //res.sendFile(login_path);
     }
 });
-*/
+
 
 router.get('/login', function (req, res, next) {
     res.sendFile(login_path);
@@ -292,7 +377,9 @@ router.use('/api', function(req, res, next) {
 /*
   path: /api/v1/users
   method: GET
-  response: [
+  response: {
+      success: boolean,
+      users: [
               { user_id: intger,
               user_name: string,
               organization_id: integer,
@@ -359,12 +446,12 @@ router.get('/api/v1/users', function(req, res) {
 
 router.post('/api/v1/party', function (req, res) {
     var uiName = req.body.name;
-    var uiOrgID = req.body.organizationID;
-    var uiCreatorID = req.body.creatorID;
-    var uiStoreID = req.body.storeID;
+    var uiOrgID = req.body.organization_id;
+    var uiCreatorID = req.body.creator_id;
+    var uiStoreID = req.body.store_id;
     // format: yyyy-mm-dd hh:mm:ss
-    var uiCreateDate = req.body.createDate;
-    var uiExpiredDate = req.body.expiredDate;
+    var uiCreateDate = req.body.create_date;
+    var uiExpiredDate = req.body.expired_date;
 
     // todo: verify input validate
     pg.connect(connectionString, function(err, client, done) {
@@ -438,6 +525,8 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
     // todo: get from user info
     //var organization = ;
     pg.connect(connectionString, function(err, client, done) {
+        var currMonth = new Date(uiYear, uiMonth, 0);
+        var lastDay = currMonth.getDate();
         var queryString =
             'SELECT'+
             ' parties.name AS name,'+
@@ -446,8 +535,8 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
             ' parties.store_id AS store_id,'+
             ' users.name AS creator,'+
             ' stores.name AS store,'+
-            ' TO_CHAR(parties.create_date, \'yyyy-mm-dd hh:mm:ss\') AS create_date,'+
-            ' TO_CHAR(parties.expired_date, \'yyyy-mm-dd hh:mm:ss\') AS expired_date,'+
+            ' TO_CHAR(parties.create_date, \'yyyy-mm-dd hh24:mm:ss\') AS create_date,'+
+            ' TO_CHAR(parties.expired_date, \'yyyy-mm-dd hh24:mm:ss\') AS expired_date,'+
             ' parties.ready AS ready,'+
             ' (SELECT COUNT(*) FROM orders WHERE parties.party_id = orders.party_id) AS order_count'+
             ' FROM parties, users, stores, orders'+
@@ -455,13 +544,13 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
             ' (parties.organization_id = {0}'+
             ' AND parties.creator_id = users.user_id'+
             ' AND parties.store_id = stores.store_id'+
-            ' AND \'{1} 00:00:00\' <= parties.create_date'+
-            ' AND parties.expired_date <= \'{2} 24:00:00\')'+
+            ' AND \'{1}-{2}-1 00:00:00\' <= parties.create_date'+
+            ' AND parties.expired_date <= \'{1}-{2}-{3} 24:00:00\')'+
             ' GROUP BY'+
             ' parties.name, parties.party_id, parties.creator_id, parties.store_id, users.name, stores.name, parties.create_date, parties.expired_date, parties.ready'+
             ' ORDER BY parties.party_id ASC;';
 
-        queryString = queryString.format(queryOrganization, '{0}-{1}-01'.format(uiYear, uiMonth), '{0}-{1}-31'.format(uiYear, uiMonth));
+        queryString = queryString.format(queryOrganization, uiYear, uiMonth, lastDay);
         //console.log(queryString);
         var query = client.query(queryString);
 
@@ -513,7 +602,7 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
 router.get('/api/v1/stores', function (req, res) {
     var results = [];
     pg.connect(connectionString, function(err, client, done) {
-        var queryString = queryPackage.queryStores;
+        var queryString = sq.queryStores;
 
         var query = client.query(queryString);
 
@@ -544,25 +633,135 @@ router.get('/api/v1/stores', function (req, res) {
 
 /*
   purpose: 查看某個 party 資訊
-  path: /api/v1/party/:id
+  path: /api/v1/party/:party_id
   method: GET
   req.body: {
     name: string,
-    organizationID: integer,
-    creatorID: integer,
-    storeID: integer,
-    createDate: string,
-    expiredDate: string,
+    organization_id: integer,
+    creator_id: integer,
+    store_id: integer,
+    create_date: string,
+    expired_date: string,
     ready: boolean
   }
 */
-// todo
+router.get('/api/v1/party/:party_id', function (req, res) {
+    var uiPartyID = req.params.party_id;
+    
+    var results = [];
+    pg.connect(connectionString, function(err, client, done) {
+        var queryString = sq.getPartyInfo_F1.format(uiPartyID);
+        //console.log(queryString);
+        var query = client.query(queryString);
+
+        if (err) {
+            return res.json({
+                success: false,
+                message: err
+            });
+        }
+
+        query.on('row', function(row) {
+            results.push({
+                name:            row.name,
+                organization_id: parseInt(row.organization_id),
+                creator_id:      parseInt(row.creator_id),
+                create_date:     row.create_date,
+                expired_date:    row.expired_date,
+                ready:           row.ready
+            });
+        });
+
+        query.on('end', function() {
+            client.end();
+            if (results.length == 1) {
+                res.json({
+                    success: true,
+                    message: 'Get OK.',
+                    party: results[0]
+                });
+            }
+            else {
+                res.json({
+                    success: false,
+                    message: 'Party not found: ' + uiPartyID
+                });
+            }
+        });
+    });
+});
 
 /*
-  purpose: party 成立 (結算金額)
-  path: /api/v1/party/:id/ready
-  method: PUT
-*/
+ * purpose: party 成立 (結算金額)
+ * path: /api/v1/party/:party_id/ready
+ * method: PUT
+ * 
+ * Pseudo code:
+ *   Get order list
+ *   foreach order:
+ *     update row: user.money = user.money - order.price
+ */
+router.put('/api/v1/party/:party_id/ready', function (req, res) {
+    // todo: check privilege
+    
+    var uiPartyID = req.params.party_id;
+    
+    if (!uiPartyID) {
+        return res.json({
+            success: false,
+            message: 'party_id is missing.'
+        });
+    }
+    
+    pg.connect(connectionString, function(err, client, done) {
+        if (err) {
+            return res.json({
+                success: false,
+                message: err
+            });
+        }
+        
+        // get party ready; if ready = false then update.
+        var partyInfo = undefined;
+        var queryString = sq.getPartyInfo_F1.format(uiPartyID);
+        var query = client.query(queryString);
+        query.on('row', function (row) {
+            partyInfo = row;
+        });
+        
+        query.on('end', function() {
+            if (!partyInfo) {
+                client.end();
+                return res.json({
+                    success: false,
+                    message: 'Party does not exist.'
+                })
+            }
+            
+            if (partyInfo.ready) {
+                client.end();
+                return res.json({
+                    success: false,
+                    message: 'Party has been ready.'
+                })
+            }
+            else {
+                // Make party ready.
+                var queryString = sq.setPartyReadyAndUpdateUsersMoney_F1.format(uiPartyID);
+                //console.log(queryString);
+                var query = client.query(queryString);
+                
+                query.on('end', function() {
+                    client.end();
+                    return res.json({
+                        success: true,
+                        message: 'Set party ready.',
+                    });
+                });
+            }
+        });
+    });
+});
 
 /*
   purpose: 訂購 (遞出 order)
@@ -595,6 +794,15 @@ router.get('/api/v1/stores', function (req, res) {
       success = true
       新建一筆 order
       新建一筆 product
+      
+  response: {
+      success: boolean,
+      message: string,
+      exception: 
+        connectionFailed
+        partyNotExist
+        partyWasReady
+  }
 */
 router.post('/api/v1/order', function (req, res) {
     //console.log('enter POST order');
@@ -605,97 +813,114 @@ router.post('/api/v1/order', function (req, res) {
     var uiProduct = req.body.product;
     var uiPrice = req.body.price;
     var uiNote = req.body.note;
+    
+    console.log('uiProduct: ' + uiProduct);
+    console.log('uiPrice: ' + uiPrice);
 
     //console.log(uiStoreID);
 
     // todo: check price validation
 
-    // [ { id: integer, name: string, price: integer }, ... ]
-    var productsInStore = [];
-    pg.connect(connectionString, function(err, client, done) {
-        var queryString = queryPackage.queryProductsListByStoreID_F1.format(uiStoreID);
-        var query = client.query(queryString);
-
-        if (err) {
-            return res.json({
-                success: false,
-                message: err
+    // check party ready
+    partyIsReady(uiPartyID, function partyExists () {
+        // [ { product_id: integer, product_name: string, price: integer }, ... ]
+        var productsInStore = [];
+        pg.connect(connectionString, function(err, client, done) {
+            if (err) {
+                return res.json({
+                    success: false,
+                    message: err
+                });
+            }
+            
+            var queryString = sq.getProductsListByStoreID_F1.format(uiStoreID);
+            var query = client.query(queryString);
+            query.on('row', function(row) {
+                productsInStore.push({
+                    product_id: parseInt(row.product_id),
+                    product_name: row.product_name,
+                    price: parseInt(row.price)
+                });
             });
-        }
-
-        query.on('row', function(row) {
-            productsInStore.push({
-                id: parseInt(row.id),
-                name: row.name,
-                price: parseInt(row.price)
-            });
-        });
-
-        query.on('end', function() {
-            client.end();
-
-            // exist/new/incorrect
-            var orderStatus = '';
-            for (var i = 0; i < productsInStore.length; i ++) {
-                var product = productsInStore[i];
-                if (product.name == uiProduct) {
-                    if (product.price == uiPrice) {
-                        orderStatus = 'exist';
-                        break;
-                    }
-                    else {
-                        orderStatus = 'incorrect';
-                        break;
+    
+            query.on('end', function() {
+                client.end();
+    
+                // exist/new/incorrect
+                console.log(JSON.stringify(productsInStore));
+                var orderStatus = '';
+                for (var i = 0; i < productsInStore.length; i++) {
+                    var product = productsInStore[i];
+                    if (product.product_name === uiProduct) {
+                        if (product.price === uiPrice) {
+                            orderStatus = 'exist';
+                            break;
+                        }
+                        else {
+                            orderStatus = 'incorrect';
+                            break;
+                        }
                     }
                 }
-            }
-            if (orderStatus == '') {
-                orderStatus = 'new';
-            }
-
-            // treat order with orderStatus
-            var newOrderID = NaN;
-            console.log('orderStatus: ' + orderStatus);
-            if (orderStatus == 'exist') {
-                var queryString = queryPackage.insertOrder_F4.format(uiUserID, uiPartyID, uiProduct, uiPrice);
-
-                pg.connect(connectionString, function(err, client, done) {
-                    var query = client.query(queryString);
-
-                    query.on('row', function (row) {
-                        newOrderID = row.order_id;
-                    });
-
-                    query.on('end', function() {
-                        client.end();
-
-                        return res.json({
-                            success: true,
-                            message: 'Create order OK !',
-                            order_id: newOrderID
+                if (orderStatus == '') {
+                    orderStatus = 'new';
+                }
+    
+                // treat order with orderStatus
+                var newOrderID = NaN;
+                console.log('orderStatus: ' + orderStatus);
+                if (orderStatus == 'exist') {
+                    var queryString = sq.insertOrder_F5.format(uiUserID, uiPartyID, uiProduct, uiPrice, uiNote);
+    
+                    pg.connect(connectionString, function(err, client, done) {
+                        var query = client.query(queryString);
+    
+                        query.on('row', function (row) {
+                            newOrderID = row.order_id;
+                        });
+    
+                        query.on('end', function() {
+                            client.end();
+    
+                            return res.json({
+                                success: true,
+                                message: 'Create order OK !',
+                                order_id: newOrderID
+                            });
                         });
                     });
-                });
-
-            }
-            else if (orderStatus == 'new') {
-
-            }
-            else if (orderStatus == 'incorrect') {
-                return res.json({
-                    success: false,
-                    message: 'Prodcut price is incorrect !'
-                });
-            }
-            else {
-                return res.json({
-                    success: false,
-                    message: 'Something wrong during insert order !'
-                });
-            }
+    
+                }
+                else if (orderStatus == 'new') {
+                    
+                    return res.json({
+                        success: true,
+                        message: 'Create order OK !',
+                        order_id: newOrderID
+                    });
+                }
+                else if (orderStatus == 'incorrect') {
+                    return res.json({
+                        success: false,
+                        message: 'Product price is incorrect !'
+                    });
+                }
+                else {
+                    return res.json({
+                        success: false,
+                        message: 'Something wrong during insert order !'
+                    });
+                }
+            });
+        });
+    }, 
+    function error (excp, msg) {
+        return res.json({
+            success: false,
+            message: msg,
+            exception: excp
         });
     });
-
 });
 
 /*
@@ -713,7 +938,8 @@ router.post('/api/v1/order', function (req, res) {
         user_name: string,
         product: string,
         price: float,
-        create_date: string
+        create_date: string,
+        note: string
       }
     ]
   }
@@ -738,8 +964,7 @@ router.get('/api/v1/party/:party_id/orders', function (req, res) {
 
     var results = [];
     pg.connect(connectionString, function(err, client, done) {
-        var queryString = 'SELECT order_id, users.user_id AS user_id, users.name AS user_name, product, price, TO_CHAR(orders.create_date, \'yyyy-mm-dd hh:mm:ss\') AS create_date FROM orders, users WHERE (users.user_id = orders.user_id);';
-
+        var queryString = sq.getOrdersByPartyID_F1.format(partyID);
         var query = client.query(queryString);
 
         if (err) {
@@ -756,7 +981,6 @@ router.get('/api/v1/party/:party_id/orders', function (req, res) {
         // After all data is returned, close connection and return results
         query.on('end', function() {
             client.end();
-            //console.log(results);
             return res.json({
                 success: true,
                 message: '',
@@ -766,60 +990,105 @@ router.get('/api/v1/party/:party_id/orders', function (req, res) {
     });
 });
 
-
-
+/*
+ * Purpose: delete specified order.
+ * path: /api/v1/order/:order_id
+ * params: token
+ * response: {
+ *     success: boolean,
+ *     message: string,
+ *     exception: string, (If success = false)
+ * }
+ * Exceptions:
+ *   1. connectionFailed
+ *   2. partyWasReady
+ * Hint:
+ *   It could only delete the order which belong to party that is ready.
+ */
+router.delete('/api/v1/order/:order_id', function (req, res) {
+    var uiOrderID = req.params.order_id;
+    
+    // todo: prevent illegal order id.
+    
+    pg.connect(connectionString, function (err, client, done) {
+        // check party ready
+        if (err) {
+            return res.json({
+                success: false,
+                message: err,
+                exception: 'connectionFailed'
+            });
+        }
+        
+        var partyIsReady = undefined;
+        var queryString = sq.getPartyByOrderID_F1.format(uiOrderID);
+        var query = client.query(queryString);
+        query.on('row', function (row) {
+            partyIsReady = row.ready;
+            console.log(JSON.stringify(row));
+        });
+        
+        query.on('end', function () {
+            console.log('partyIsReady: ' + partyIsReady);
+            if (!partyIsReady) {
+                pg.connect(connectionString, function (err, client, done) {
+                    if (err) {
+                        return res.json({
+                            success: false,
+                            message: err,
+                            exception: 'connectionFailed'
+                        });
+                    }
+                    
+                    var queryString = sq.deleteRow_F3.format('orders', 'order_id', uiOrderID);
+                    var query = client.query(queryString);
+                    //console.log('after delete query');
+                    query.on('end', function() {
+                        client.end();
+                        return res.json({
+                            success: true,
+                            message: ''
+                        });
+                    });
+                });
+            }
+            else {
+                return res.json({
+                    success: false,
+                    message: 'Party was ready !',
+                    exception: 'partyWasReady'
+                });
+            }
+        })
+        
+        
+    });
+});
 
 
 /*
-  purpose:
-  path:
-  method:
-*/
-
-/*
-  purpose: 查看 stores list
-  path: /api/v1/stores
+  purpose: 查看 store infos
+  path: /api/v1/store/:store_id
   method: GET
-*/
-
-/*
-  purpose: 查看 store info
-  path: /api/v1/store/:id
-  method: GET
-*/
-
-/*
-  purpose: 新增 store
-  path: /api/v1/store
-  method: POST
-  req.body: {
-    name: string,
-    phone_number: string,
-    image: string,
-    min_spending
-  }
-  res: {
-    success: boolean,
-    store_id: integer
+  res.body: {
+      success: boolean,
+      message: string,
+      store: {
+          name: string,
+          phone_number: string,
+          create_date: string,
+          image: string,
+          min_spending: integer
+      }
   }
 */
-router.post('/api/v1/store', function (req, res) {
-    var uiName = req.body.name;
-    var uiPhoneNumber = req.body.phone_number;
-    var uiImagePath = req.body.image;
-    var uiCreateDate; // get current date. format: yyyy-mm-dd hh:mm:ss
-    var uiMinSpending = req.body.min_spending;
+router.get('/api/v1/store/:store_id', function (req, res) {
+    var uiStoreID = req.params.store_id;
     
-    var cols = [];
-    var vals = [];
-    var newStoreID = undefined;
-    
-    // todo: read uploaded file.
-    
+    var results = [];
     pg.connect(connectionString, function(err, client, done) {
-        var queryString = queryPackage.insertStore_F2.format(
-            queryPackage.arrayToSQLInsertString(cols), 
-            queryPackage.arrayToSQLInsertString(vals));
+        var queryString = sq.getStoreInfo_F1.format(uiStoreID);
+        console.log(queryString);
         var query = client.query(queryString);
 
         if (err) {
@@ -830,15 +1099,125 @@ router.post('/api/v1/store', function (req, res) {
         }
 
         query.on('row', function(row) {
-            newStoreID = row.store_id;
+            results.push({
+                name:         row.name,
+                phone_number: row.phone_number,
+                create_date:  row.create_date,
+                image:        row.image,
+                min_spending: parseInt(row.min_spending)
+            });
         });
 
+        // After all data is returned, close connection and return results
         query.on('end', function() {
             client.end();
-            return res.json({
-                success: true,
-                message: '',
-                store_id: newStoreID
+            //console.log(results);
+            if (results.length == 1) {
+                return res.json({
+                    success: true,
+                    message: '',
+                    store: results[0]
+                });
+            }
+            else {
+                return res.json({
+                    success: false,
+                    message: 'Store not found: ' + uiStoreID
+                });
+            }
+        });
+    });
+});
+
+/*
+  purpose: 新增 store
+  path: /api/v1/store
+  method: POST
+  req.file: image
+  req.body: {
+    name: string,
+    phone_number: string,
+    min_spending
+  }
+  res: {
+    success: boolean,
+    store_id: integer
+  }
+*/
+router.post('/api/v1/store', function (req, res) {
+    var uiName = req.body.name;
+    var uiPhoneNumber = req.body.phone_number;
+    var uiMinSpending = req.body.min_spending;
+    
+    var cols = [];
+    var vals = [];
+    var newStoreID = undefined;
+    
+    // Name is necessary.
+    if (uiName) {
+        cols.push('name');
+        vals.push(sq.SQLString(uiName));
+    }
+    else {
+        return res.json({
+            success: false,
+            message: 'Name is missing.'
+        });
+    }
+    
+    // Phone number is necessary.
+    if (uiPhoneNumber) {
+        cols.push('phone_number');
+        vals.push(sq.SQLString(uiPhoneNumber));
+    }
+    else {
+        return res.json({
+            success: false,
+            message: 'Phone number is missing.'
+        })
+    }
+    
+    // Auto-generate create_date.
+    cols.push('create_date');
+    vals.push('NOW()');
+    
+    // Default: 0
+    cols.push('min_spending');
+    if (uiMinSpending) {
+        vals.push(uiMinSpending);
+    }
+    else {
+        vals.push(0);
+    }
+    
+    uploadImage(req, function (imagePath) {
+        cols.push('image');
+        vals.push((imagePath) ? sq.SQLString(imagePath) : sq.SQLString(''));
+        pg.connect(connectionString, function(err, client, done) {
+            var queryString = sq.insertStore_F2.format(
+                sq.arrayToSQLInsertString(cols), 
+                sq.arrayToSQLInsertString(vals));
+            //console.log(queryString);
+            var query = client.query(queryString);
+    
+            if (err) {
+                return res.json({
+                    success: false,
+                    message: err
+                });
+            }
+    
+            query.on('row', function(row) {
+                newStoreID = row.store_id;
+            });
+    
+            query.on('end', function() {
+                client.end();
+                return res.json({
+                    success: true,
+                    message: 'Update OK.',
+                    store_id: newStoreID
+                });
             });
         });
     });
@@ -861,107 +1240,34 @@ router.put('/api/v1/store/:store_id', function (req, res) {
     var uiPhoneNumber = req.body.phone_number;
     var uiMinSpending = req.body.min_spending;
     
-    var colList = [];
-    var valList = [];
+    var cols = [];
+    var vals = [];
     
     if (uiName) {
-        colList.push('name');
-        valList.push(uiName);
+        cols.push('name');
+        vals.push(sq.SQLString(uiName));
     }
     
     if (uiPhoneNumber) {
-        colList.push('phone_number');
-        valList.push(uiPhoneNumber);
+        cols.push('phone_number');
+        vals.push(sq.SQLString(uiPhoneNumber));
     }
     
     if (uiMinSpending) {
-        colList.push('min_spendiing');
-        valList.push(uiMinSpending);
+        cols.push('min_spendiing');
+        vals.push(uiMinSpending);
     }
     
     
     // todo: prevent illegal request field
     
-    // upload file
-    if (req.busboy) {
-        var uniqName = getUniqName();
-        
-        var fstream;
-        req.pipe(req.busboy);
-        req.busboy.on('file', function (fieldname, file, filename) {
-            console.log("Uploading: " + filename);
-            
-            var s3Key = uniqName + '/' + filename;        
-            
-            // temp save to root/server/img
-            var imgDir = path.join(__dirname, '..', 'img', getUniqName());
-            fs.mkdirsSync(imgDir);
-            var tmpFile = path.join(imgDir, filename);
-            fstream = fs.createWriteStream(tmpFile);
-            file.pipe(fstream);
-            fstream.on('close', function () {  
-                // send to S3
-                console.log('Sending to S3 ...');
-                var body = fs.createReadStream(tmpFile) /* .pipe(zlib.createGzip()) */;
-                var params = {Bucket: S3_BUCKET, Key: s3Key, Body: body};
-                var s3 = new AWS.S3();
-                //var file = fs.createReadStream(tmpFile);
-                s3.upload(params, function (err, data) {
-                    if (err) {
-                        console.log("Error uploading data: ", err);
-                    } 
-                    else {
-                        console.log("Successfully uploaded data to " + S3_BUCKET + '/' + s3Key);
-                    }
-                })
-                .on('httpUploadProgress', function(evt) { 
-                    console.log(evt); 
-                })
-                .send(function(err, data) { 
-                    console.log(err, data);
-                    
-                    // remove tmp file
-                    if (fs.existsSync(imgDir)) {
-                        fs.removeSync(imgDir);
-                    }
-                
-                    // response
-                    console.log("Upload Finished of " + filename);
-                    
-                    // todo: write image URL to DB
-                    colList.push('image');
-                    valList.push('\'' + data.Location + '\'');
-                    
-                    pg.connect(connectionString, function(err, client, done) {
-                        var queryString = 'UPDATE stores SET {0} WHERE store_id = {1};'.format(queryPackage.arrayToSQLUpdateString(colList, valList), uiStoreID);
-                        console.log(queryString);
-                        var query = client.query(queryString);
-                
-                        if (err) {
-                            return res.json({
-                                success: false,
-                                message: err
-                            });
-                        }
-                
-                        // After all data is returned, close connection and return results
-                        query.on('end', function() {
-                            client.end();
-                            return res.json({
-                                success: true,
-                                message: 'Update OK.'
-                            });
-                        });
-                    });
-                
-                });
-            });
-        });
-    } // end of busboy (streaming)
-    else if (colList.length > 0) {
+    uploadImage(req, function (imagePath) {
         pg.connect(connectionString, function(err, client, done) {
-            var queryString = 'UPDATE stores SET {0} WHERE store_id = {1};'.format(queryPackage.arrayToSQLUpdateString(colList, valList), uiStoreID);
-            console.log(queryString);
+            cols.push('image');
+            vals.push((imagePath) ? sq.SQLString(imagePath) : sq.SQLString(''));
+            var queryString = 'UPDATE stores SET {0} WHERE store_id = {1};'.format(sq.arrayToSQLUpdateString(cols, vals), uiStoreID);
+            //console.log(queryString);
+            //if (imagePath) console.log(imagePath);
             var query = client.query(queryString);
     
             if (err) {
@@ -974,14 +1280,13 @@ router.put('/api/v1/store/:store_id', function (req, res) {
             // After all data is returned, close connection and return results
             query.on('end', function() {
                 client.end();
-                //console.log(results);
                 return res.json({
                     success: true,
                     message: 'Update OK.'
                 });
             });
         });
-    }
+    });
 });
     
 
@@ -1016,8 +1321,7 @@ router.get('/api/v1/store/:store_id/products', function (req, res) {
 
     var results = [];
     pg.connect(connectionString, function(err, client, done) {
-        // todo: SQL statement
-        var queryString = 'SELECT product_id, name AS product_name, store_id, price FROM products WHERE (store_id = {0});';
+        var queryString = sq.getProductsListByStoreID_F1.format(storeID);
 
         queryString = queryString.format(storeID);
         //console.log(queryString);
@@ -1047,61 +1351,206 @@ router.get('/api/v1/store/:store_id/products', function (req, res) {
     });
 });
 
-// todo
 
 /*
-  purpose: 查看某個 product
-  path: /api/v1/product/:id
-  method: GET
-  res.body: {
-    product_id: integer,
-    store_id: integer,
-    name: string,
-    price: float
-  }
-*/
-// todo
+ * purpose: 查看某個 product
+ * path: /api/v1/product/:product_id
+ * method: GET
+ * res.body: {
+ *   store_id: integer,
+ *   name: string,
+ *   price: float
+ * }
+ */
+router.get('/api/v1/product/:product_id', function (req, res) {
+    var uiProductID = req.params.product_id;
+    
+    
+    var results = [];
+    pg.connect(connectionString, function(err, client, done) {
+        var queryString = sq.getProductInfo_F1.format(uiProductID);
+        //console.log(queryString);
+        var query = client.query(queryString);
+
+        if (err) {
+            return res.json({
+                success: false,
+                message: err
+            });
+        }
+
+        query.on('row', function(row) {
+            results.push(row);
+        });
+
+        // After all data is returned, close connection and return results
+        query.on('end', function() {
+            client.end();
+            if (results.length == 1) {
+                return res.json({
+                    success: true,
+                    message: '',
+                    product: {
+                        store_id: results[0].store_id,
+                        name:     results[0].name,
+                        price:    parseFloat(results[0].price)
+                    }
+                });
+            }
+            else {
+                return res.json({
+                    success: false,
+                    message: 'Product not found: ' + uiProductID
+                })
+            }
+        });
+    });
+});
 
 /*
-  purpose: 留下 product comment
-  path: /api/v1/product/:id/comment
-  method: POST
-  req.body: {
-    product_id: integer,
-    commentUserID: integer,
-    text: string, // markdown
-    date: string,
-    stars: integer
-  }
-  res.body: {
-    success: boolean,
-    commentID: integer
-  }
-*/
+ * purpose: 留下 product comment
+ * path: /api/v1/product/comment
+ * method: POST
+ * req.body: {
+ *   product_id: integer,
+ *   comment_user_id: integer,
+ *   text: string, // markdown
+ *   stars: integer,
+ *   image: string
+ * }
+ * res.body: {
+ *   success: boolean,
+ *   comment_id: integer
+ * }
+ */
+router.post('/api/v1/product/comment', function (req, res) {
+    var uiProductID = req.body.product_id;
+    var uiCommentUserID = req.body.comment_user_id;
+    var uiText = req.body.text;
+    var uiStars = req.body.stars;
+    
+    var cols = [];
+    var vals = [];
+    
+    if (!uiProductID) {
+        return res.json({
+            success: false,
+            message: 'product_id is missing.'
+        });
+    }
+    else {
+        cols.push('product_id');
+        vals.push(uiProductID);
+    }
+    
+    if (!uiCommentUserID) {
+        return res.json({
+            success: false,
+            message: 'comment_user_id is missing.'
+        })
+    }
+    else {
+        cols.push('comment_user_id');
+        vals.push(uiCommentUserID);
+    }
+    
+    cols.push('text');
+    if (!uiText) {
+        vals.push(sq.SQLString(''));
+    }
+    else {
+        vals.push(sq.SQLString(uiText));
+    }
+    
+    if (uiStars) {
+        cols.push('stars');
+        vals.push(uiStars);
+    }
+    else {
+        return res.json({
+            success: false,
+            message: 'stars is missing.'
+        });
+    }
+    
+    cols.push('date');
+    vals.push('NOW()');
+    
+    uploadImage(req, function (uiImage) {
+        cols.push('image');
+        if (uiImage) {
+            vals.push(sq.SQLString(uiImage));
+        }
+        else {
+            vals.push(sq.SQLString(''));
+        }
+        
+        var results = [];
+        pg.connect(connectionString, function(err, client, done) {
+            var queryString = sq.insertRow_F4.format(
+                'comments',
+                sq.arrayToSQLInsertString(cols),
+                sq.arrayToSQLInsertString(vals),
+                'comment_id');
+            console.log(queryString);
+            var query = client.query(queryString);
+    
+            if (err) {
+                return res.json({
+                    success: false,
+                    message: err
+                });
+            }
+    
+            query.on('row', function(row) {
+                results.push(row);
+            });
+    
+            // After all data is returned, close connection and return results
+            query.on('end', function() {
+                client.end();
+                if (results.length == 1) {
+                    return res.json({
+                        success: true,
+                        message: '',
+                        comment_id: results[0].comment_id
+                    });
+                }
+                else {
+                    return res.json({
+                        success: false,
+                        message: 'Comment insert failed.'
+                    })
+                }
+            });
+        });
+    });
+});
 
 
 /*
-  purpose: 查看 comment list
-  path: /api/v1/product/:product_id/comments
-  method: GET
-  res.body: {
-    success: boolean,
-    message: string,
-    comments: [
-        {
-            comment_id: integer,
-            product_id: integer,
-            product_name: string,
-            user_id: integer,
-            user_name: string,
-            text: string, // markdown
-            date: string,
-            stars: integer
-        },
-        ...
-    ]
-  }
-*/
+ * purpose: 查看 comment list
+ * path: /api/v1/product/:product_id/comments
+ * method: GET
+ * res.body: {
+ *   success: boolean,
+ *   message: string,
+ *   comments: [
+ *       {
+ *           comment_id: integer,
+ *           product_id: integer,
+ *           product_name: string,
+ *           user_id: integer,
+ *           user_name: string,
+ *           text: string, // markdown
+ *           date: string,
+ *           stars: integer,
+ *           image: string
+ *       },
+ *       ...
+ *   ]
+ * }
+ */
 router.get('/api/v1/product/:product_id/comments', function (req, res) {
     var productID = req.params.product_id;
 
@@ -1114,19 +1563,18 @@ router.get('/api/v1/product/:product_id/comments', function (req, res) {
 
     var results = [];
     pg.connect(connectionString, function(err, client, done) {
-        // todo: SQL statement
-        var queryString = 'SELECT comment_id, comments.product_id, products.name AS product_name, comment_user_id AS user_id, users.name AS user_name, text, stars, comments.date FROM comments, users, products WHERE (comment_user_id = users.user_id AND comments.product_id = products.product_id AND comments.product_id = {0});';
-
-        queryString = queryString.format(productID);
-        //console.log(queryString);
-        var query = client.query(queryString);
-
         if (err) {
             return res.json({
                 success: false,
                 message: err
             });
         }
+        
+        // todo: SQL statement
+        var queryString = sq.getProductComments_F1.format(productID);
+
+        //console.log(queryString);
+        var query = client.query(queryString);
 
         query.on('row', function(row) {
             results.push(row);
@@ -1145,5 +1593,114 @@ router.get('/api/v1/product/:product_id/comments', function (req, res) {
     });
 });
 
+/*
+ * purpose: add product.
+ * path: /api/v1/product
+ * method: POST
+ * req.body: {
+ *     store_id: integer,
+ *     name: string,
+ *     price: float
+ * }
+ * 
+ * res: {
+ *     success: boolean,
+ *     message: string,
+ *     product_id: integer
+ * }
+ */
+router.post('/api/v1/product', function (req, res) {
+    var uiStoreID = req.body.store_id;
+    var uiName = req.body.name;
+    var uiPrice = req.body.price;
+    
+    var cols = [];
+    var vals = [];
+    if (!uiStoreID) {
+        return res.json({
+            success: false,
+            message: 'store_id is missing.'
+        });
+    }
+    cols.push('store_id');
+    vals.push(uiStoreID);
+    
+    if (!uiName) {
+        return res.json({
+            success: false,
+            message: 'name is missing.'
+        });
+    }
+    uiName = uiName.trim();
+    if (uiName === '') {
+        return res.json({
+            success: false,
+            message: 'message could not be empty !'
+        });
+    } 
+    cols.push('name');
+    vals.push(sq.SQLString(uiName));
+    
+    if (!uiPrice) {
+        return res.json({
+            success: false,
+            message: 'price is missing.'
+        });
+    }
+    else if (uiPrice <= 0) {
+        return res.json({
+            success: false,
+            message: 'Price must be greater than 0 !'
+        })
+    }
+    cols.push('price');
+    vals.push(uiPrice);
+    
+    var results = [];
+    pg.connect(connectionString, function (err, client, done) {
+        if (err) {
+            return res.json({
+                success: false,
+                message: err
+            });
+        }
+        
+        var queryString = sq.insertRow_F4.format('products',
+            sq.arrayToSQLInsertString(cols),
+            sq.arrayToSQLInsertString(vals),
+            'product_id');
+            
+        var query = client.query(queryString);
+
+        query.on('row', function(row) {
+            results.push(row);
+        });
+
+        // After all data is returned, close connection and return results
+        query.on('end', function() {
+            client.end();
+            if (results.length == 1) {
+                return res.json({
+                    success: true,
+                    message: '',
+                    product_id: results[0].product_id
+                });
+            }
+            else {
+                return res.json({
+                    success: false,
+                    message: 'Result failed.'
+                });
+            }
+        });
+    });
+})
+
+/*
+ * purpose: modify product comment.
+ * path: /api/v1/product/:product_id/comment
+ * method: PUT
+ */
+// todo
 
 module.exports = router;
