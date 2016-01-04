@@ -1,4 +1,4 @@
 /* global docCookies */
 'use strict';
 
-angular.module('main', ['angularFileUpload', 'datetime']);
+var app = angular.module('main', ['angularFileUpload', 'datetime']);

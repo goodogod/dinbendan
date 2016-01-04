@@ -1,6 +1,14 @@
 'use strict';
 
 /*
+ * Resource stirngs.
+ */
+
+const PARTY = '便當團';
+const STORE = '店家';
+const PRODUCT = '商品';
+
+/*
  *  Return: { token: string, organizationID: string, userID: string }
  */
 function getInfoFromCookies (cookies) {
@@ -107,4 +115,36 @@ function getUsersList($http, token, outUsersList, doneEvent) {
             });
         }
     });
+}
+
+/* 
+ * Get query string value.
+ */
+function getParameterByName(name) {
+    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+        results = regex.exec(location.search);
+    return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+}
+
+/*
+ * Return date time format: yyyy-MM-dd
+ */
+function getDateString(date) {
+    return date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate();
+}
+
+/*
+ * Return date time format: yyyy-MM-dd hh:mm:ss
+ */
+function getDateTimeString(date) {
+    return getDateString(date) + ' ' + date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds(); 
+}
+
+/*
+ * Convert yyyy-MM-dd hh:mm:ss to yyyy/MM/dd hh:mm:ss 
+ */
+function DateStandardFormat(dateString) {
+    var newDate = dateString.replace(new RegExp('-', 'g'), '/'); 
+    return newDate;
 }

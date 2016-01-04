@@ -6,14 +6,17 @@
 ======================================================*/
 angular.module('main')
 
-.controller('headerController', function ($scope, $http) {
+.controller('headerController', function ($scope, $http, userInfoService) {
     
     var info = getInfoFromCookies(docCookies);
     var token = info.token;
     var organizationID = info.organizationID;
     var userID = info.userID;
     
+    $scope.userInfo = userInfoService;
+    $scope.userInfo.update(userID, organizationID, token);
     // todo: extract to common module
+    /*
     $scope.userInfo = {
         userName: undefined,
         userID: undefined,
@@ -54,24 +57,7 @@ angular.module('main')
         }
     };
     $scope.userInfo.updateUserInfo(userID);
-    
-    // Title redirection
-    $scope.clickMainTitle = function () {
-        window.location.href = '/';
-    }
-
-    // Party redirection
-    $scope.clickBrowse = function () {
-        window.location.href = '/browse';
-        //alert('Create party !');
-        //$('#createPartyModal').on('shown.bs.modal', function () {
-        //    $('#myInput').focus()
-        //});
-    };
-    
-    $scope.clickRecharge = function () {
-        window.location.href = '/recharge';
-    }
+    */
     
     $scope.clickLogout = function() {
         docCookies.setItem('token', undefined);

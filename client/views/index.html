@@ -8,6 +8,7 @@
     <link href="http://netdna.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel="stylesheet" media="screen">
     <!-- link href="material/css/material.min.css" rel="stylesheet" media="screen" -->
     <link href="stylesheets/style.css" rel="stylesheet" media="screen">
+    <link href="stylesheets/index.css" rel="stylesheet" media="screen">
 </head>
 
 <body>
@@ -27,7 +28,7 @@
             <div class="row">
                 <ul class="nav nav-tabs">
                     <li role="presentation" ng-repeat="day in daysInWeek" ng-class="{ active: $index == todayDay }">
-                        <a href="javascript:void(0)">{{day | date: medium}}</a>
+                        <a href="javascript:void(0)" ng-click="clickDate(day)">{{day | date: 'MM/dd EEE'}}</a>
                     </li>
                 </ul>
             </div>
@@ -37,56 +38,71 @@
                 </br>
             </div>
 
-            <!-- parties-list; show as tab list -->
-            <div class="row">
-                <ul class="nav nav-pills" class="today-parties">
-                    <li class="today-party" ng-repeat="todayParty in todayParties" ng-class="{active: todayParties[$index].active}">
-                        <a href="javascript:void(0)">{{todayParty.name}}</a>
-                    </li>
-                </ul>
-
-            </div>
 
             <!-- party and orders info -->
-            <div class="row">
+            <div class="no-party-view" ng-show="todayParties.length == 0">
+                <a>今天沒有團喔！</a>
+            </div>
+            <div class="row parties-orders" ng-show="todayParties.length > 0">
                 <!-- product-info -->
                 <div class="col-md-4 panel panel-default">
+
+                    <!-- parties-list; show as combobox -->
+                    <div class="dropdown parties-list" ng-show="todayParties.length > 0">
+                        <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true"
+                        aria-expanded="true">
+                            {{ activeParty.name }}
+                            <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+                            <li class="today-party" ng-repeat="todayParty in todayParties" ng-class="{active: todayParties[$index].party_id == activeParty.party_id }">
+                                <a href="javascript:void(0)" ng-click="clickParty(todayParty)">{{todayParty.name}}</a>
+                            </li>
+                        </ul>
+                        
+                        <!-- span class="glyphicons glyphicons-edit"></span -->
+                    </div>
+                    
+                    <br>
+
                     <!-- store info -->
                     <div ng-show="selectOrderSummary == null">
                         <p>{{activeStore.name}}</p>
-                        <img ng-src="{{ activeStore.image || '//:0' }}" alt="Description" class="img-thumbnail">
+                        <a href="{{ activeStore.image }}" target="_blank" class="thumbnail"">
+                            <img ng-src="{{ activeStore.image || '//:0' }}" alt="Description">
+                        </a>
                     </div>
 
                     <div ng-show="selectOrderSummary != null" class="product-info">
                         <!-- p>Product Info</p -->
                         <!-- product name -->
-                        <div class="row">
-                            <p>學名：{{selectOrderSummary.product}}</p>
-                        </div>
+                        <p>學名：{{selectOrderSummary.product}}</p>
 
                         <!-- product price -->
-                        <div class="row">
-                            <p>售價：{{selectOrderSummary.price}}</p>
-                        </div>
-
-                        <!-- rate -->
-                        <div class="row">
-                            <!-- p>分數：{{selectOrderSummary.rate}}</p -->
-                        </div>
+                        <p>售價：{{selectOrderSummary.price}}</p>
 
                         <!-- comments list -->
-                        <div class="row">
-                            <p>評論</p>
+                        <p>評論：</p>
+                        <div class="comment-list">
                             <ul>
                                 <li ng-repeat="comment in selectProductComments">
-                                    <a href="">{{comment.user_name}}</a>
-                                    <p>分數：{{comment.stars}}</p>
-                                    <p>{{comment.text}}</p>
+                                    <div class="panel panel-default">
+                                        <div class="panel-heading">
+                                            <a href="">{{comment.user_name}}</a>
+                                            
+                                        </div>
+                                        
+                                        <div class="panel-body">
+                                            <span>分數：{{comment.stars}}</p>
+                                            <p>{{comment.text}}</p>
+                                        </div>
+                                    </div>
                                 </li>
                             </ul>
                         </div>
                     </div>
                 </div>
+                
                 <!-- party-info -->
                 <div class="col-md-8 panel panel-default">
                     <div class="party-info">
@@ -95,22 +111,24 @@
                             <!-- search input -->
                             <div class="search-orders">
                                 <form class="navbar-form navbar-left">
-                                    <input type="text" class="form-control col-lg-8" placeholder="快速搜尋">
+                                    <input type="text" class="form-control col-lg-8" placeholder="快速搜尋" ng-model="productFilterValue">
                                 </form>
                             </div>
 
                             <!-- 結案鈕 -->
-                            <button type="button" class="btn btn-primary pull-right" data-toggle="modal" data-target=".party-result-modal" ng-show="activeParty != null && !activeParty.ready && activePartyResult.visible"
-                            ng-click="activePartyResult.onShow()">結算</button>
+                            <div class="clearing">
+                                <button type="button" class="btn btn-success pull-right" data-toggle="modal" data-target=".party-result-modal" ng-show="activeParty != null && !activeParty.ready && activePartyResult.visible"
+                                ng-click="activePartyResult.onShow()">結算</button>
+                            </div>
 
                             <!-- 剩餘時間 -->
-                            <div class="pull-right" ng-show="today < activeParty.createDate">
+                            <div class="pull-right" ng-show="today.getTime() < activeParty.createDate.getTime()">
                                 Party 還沒到！
                             </div>
-                            <div class="pull-right" ng-show="activeParty.createDate <= today && today <= activeParty.expiredDate">
+                            <div class="pull-right" ng-show="activeParty.createDate.getTime() <= today.getTime() && today.getTime() <= activeParty.expiredDate.getTime()">
                                 <timer end-time="activeParty.expiredDate">還有 {{hours}} 時, {{minutes}} 分, {{seconds}} 秒 結束。</timer>
                             </div>
-                            <div class="pull-right" ng-show="activeParty.expiredDate < today">
+                            <div class="pull-right" ng-show="activeParty.expiredDate.getTime() < today.getTime()">
                                 Party 已過期！
                             </div>
 
@@ -177,7 +195,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr ng-repeat="orderSummary in orderSummaries" ng-class="{info: orderSummary === selectOrderSummary}">
+                                        <tr ng-repeat="orderSummary in orderSummaries | productFilter:productFilterValue" ng-class="{active: orderSummary === selectOrderSummary}">
                                             <td>
                                                 <a href="" ng-click="clickOrder(orderSummary)">
                             {{orderSummary.product}}
@@ -185,13 +203,10 @@
                                             </td>
                                             <td>{{orderSummary.price}}</td>
                                             <td>
-                                                <span class="tag label label-success" ng-repeat="user in orderSummary.users">
-                            <span>{{user.name}}</span>
-                                                <a ng-show="userID == user.id && activeParty.ready == false" ng-click="orderSummaries.onDeleteOrder(user)"><i class="remove glyphicon glyphicon-remove-sign glyphicon-white"></i></a>
+                                                <span class="tag label label-primary" ng-repeat="user in orderSummary.users">
+                                                    <span>{{user.name}}</span>
+                                                    <a ng-show="userID == user.id && activeParty.ready == false" ng-click="orderSummaries.onDeleteOrder(user)"><i class="remove glyphicon glyphicon-remove-sign glyphicon-white"></i></a>
                                                 </span>
-                                                <!-- a ng-repeat="user in orderSummary.users" href="javascript:void(0)">
-                            {{user.name}}
-                          </a -->
                                             </td>
                                         </tr>
                                     </tbody>
@@ -200,20 +215,14 @@
                         </div>
 
                         <!-- ready to order -->
-                        <div class="row">
+                        <div class="row" ng-show="activeParty.available(today)">
                             <form name="orderForm" ng-submit="inputOrder.submitOrder()">
                                 <!-- ready to order -->
                                 <div class="col-md-10">
                                     <div class="form-group">
                                         <label>菜單：
                                             <input type="text" name="inputProduct" placeholder="菜單上沒有？直接輸入" ng-model="inputOrder.productName" required>
-                                            <!-- verify inputProduct -->
-                                            <!-- span role="alert" class="error" ng-show="orderForm.inputProduct.$error.required">
-                            Required!
-                          </span -->
                                         </label>
-
-
                                         <label>
                                             金額：
                                             <input type="text" name="inputPrice" placeholder="金額" ng-model="inputOrder.price" required>
@@ -269,6 +278,10 @@
     <!-- user scripts -->
     <script src="javascripts/cookies.js"></script>
     <script src="javascripts/main-module.js"></script>
+
+    <!-- angular services -->
+    <script src="javascripts/services/user-info.js "></script>
+
     <script src="javascripts/controllers/controller-tools.js"></script>
     <script src="javascripts/controllers/header.js"></script>
     <script src="javascripts/controllers/index.js"></script>

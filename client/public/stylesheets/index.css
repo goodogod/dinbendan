@@ -1,0 +1,28 @@
+/* Inner spacing with parent element. */
+.parties-list {
+    padding: 5px;
+}
+
+.no-party-view {
+    font-size: xx-large;
+    margin: 0px auto;
+}
+
+.clearing {
+    padding: 5px;
+}
+
+/*
+.navbar-header {
+    text-align: center;
+}
+*/
+
+/*
+.logo-image {
+    background-image: url("https://s3-ap-northeast-1.amazonaws.com/dinbendan/images/logo32.png");
+    height: 100%;
+    float: left;
+    background-repeat: no-repeat;
+}
+*/

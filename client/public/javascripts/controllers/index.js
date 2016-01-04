@@ -11,13 +11,49 @@ function Party(name, party_id, creator_id, store_id, creator, store,
     this.expired_date = expired_date;
     this.ready = ready;
     this.orders_count = orders_count;
-    this.active = false;
     
-    this.createDate = new Date(this.create_date);
-    this.expiredDate = new Date(this.expired_date);
+    this.createDate = new Date(DateStandardFormat(this.create_date));
+    this.expiredDate = new Date(DateStandardFormat(this.expired_date));
 }
 Party.prototype = {
-    constructor: Party
+    constructor: Party,
+    available: function (today) {
+        return (this.createDate.getTime() <= today.getTime() && today.getTime() <= this.expiredDate.getTime());
+    }
+};
+
+/*
+ * Store definiition
+ */
+function Store() {
+    this.name = '';
+    this.phoneNumber = '';
+    this.image = '';
+    this.minSpending = 0;
+}
+Store.prototype = {
+    constructor: Store,
+    initialize: function ($http, token, storeID) {
+        var curStore = this;
+        $http({
+            url: '/api/v1/store/' + storeID,
+            method: 'GET',
+            params: {
+                token: token
+            }
+        })
+        .success(function (response) {
+            if (response.success) {
+                curStore.name = response.store.name;
+                curStore.phoneNumber = response.store.phone_number;
+                curStore.image = response.store.image;
+                curStore.minSpending = parseInt(response.store.min_spending);
+            } 
+            else {
+                // todo: error handling
+            }
+        });
+    }
 };
 
 /*======================================================
@@ -25,7 +61,15 @@ Party.prototype = {
 ======================================================*/
 angular.module('main')
 
-.controller('mainController', function ($scope, $http) {
+.controller('mainController', function ($scope, $http, userInfoService) {
+    
+    /*
+     * query string: d=yyyymmdd,p=id
+     * d && p:  show the party on the date.
+     * d:       show first party on the date.
+     * p:       show today first party.
+     * nothing: show today first party. 
+     */
     
     // verify id
     var info = getInfoFromCookies(docCookies);
@@ -33,46 +77,50 @@ angular.module('main')
     var organizationID = info.organizationID;
     var userID = info.userID;
 
-    //$scope.activePage = 'mainView';
-
+    // display today
+    // 0 ~ 6
+    //var today = new Date('2015-7-13 10:00:00'); // for test
+    //var queryDate = $location.search().d;
+    var today;
+    if (getParameterByName('d')) {
+        today = new Date();
+        var paramDate = new Date(DateStandardFormat(getParameterByName('d')));
+        if (isNaN(paramDate.getTime())) { // Date is invalid
+            //today = new Date();
+        } else {
+            //today = new Date();
+            today.setFullYear(paramDate.getFullYear());
+            today.setMonth(paramDate.getMonth());
+            today.setDate(paramDate.getDate());
+        } 
+    } else {
+        today = new Date();
+    }
+    $scope.paramDate = today;
+    $scope.today = new Date();
+    
+    var queryPartyID = getParameterByName('p');
+    
+    
+    
     // initialize all scope variables
     $scope.userID = userID;
     $scope.organizationID = organizationID;
     
-    // todo: extract to common module
-    
-    $scope.activeStore = {
-        name: '',
-        phoneNumber: '',
-        image: '',
-        minSpending: 0,
+    $scope.activeStore = new Store();
+    $scope.clickStoreImage = function (store) {
         
-        initialize: function (storeID) {
-            $http({
-                url: '/api/v1/store/' + storeID,
-                method: 'GET',
-                params: {
-                    token: token
-                }
-            })
-            .success(function (response) {
-                if (response.success) {
-                    $scope.activeStore.name = response.store.name;
-                    $scope.activeStore.phoneNumber = response.store.phone_number;
-                    $scope.activeStore.image = response.store.image;
-                    $scope.activeStore.minSpending = parseInt(response.store.min_spending);
-                } 
-                else {
-                    // todo: error handling
-                }
-            });
-        }
     };
 
     /*******************************
      format: [ { party_id, create_date: Date, expired_date: Date }, ...]
     *******************************/
     $scope.todayParties = [];
+    $scope.clickParty = function (party) {
+        window.location.href = '/?d=' + getDateString($scope.paramDate) + '&p=' + party.party_id;
+    };
+    
+    $scope.productFilterValue = '';
 
     /*******************************
       orderSummaries: [
@@ -94,7 +142,7 @@ angular.module('main')
     *******************************/
     $scope.orderSummaries = [];
     $scope.orderSummaries.onDeleteOrder = function (user) {
-        if (confirm('確定要刪除?')) {
+        if (confirm('確定要取消訂單?')) {
             $http({
                 url: '/api/v1/order/' + user.orderID,
                 method: 'DELETE',
@@ -123,6 +171,7 @@ angular.module('main')
             })
             .error(function (res) {
                 // todo: alert error
+                console.log(JSON.stringify(res));
             });
             
         }
@@ -382,58 +431,42 @@ angular.module('main')
         price: 0,
         note: '',
         submitOrder: function () {
-
-            var req = {
-                method: 'POST',
-                url: '/api/v1/order',
-                data: {
-                    user_id:  userID,
-                    party_id: $scope.activeParty.party_id,
-                    store_id: $scope.activeParty.store_id,
-                    product:  this.productName,
-                    price:    parseInt(this.price),
-                    note:     this.note
-                },
-                params: {
-                    token:          token,
-                    userID:         userID,
-                    organizationID: organizationID
-                }
-            };
-
-            $http(req).success(function (response) {
-                if (response.success) {
-                    console.log(response.order_id);
-                    $scope.updateProductsListAndOrderSummaries($scope.productsList, $scope.activeParty.store_id, token, organizationID);
-                } else {
-                    console.log(response.message);
-                    console.log(response.exception);
-                    if (response.exception === 'connectionFailed') {
-                        alert('連線錯誤！');
-                    } else if (response.exception === 'partyNotExist') {
-                        alert('請求的 Party 不存在！');
-                    } else if (response.exception === 'partyWasReady') {
-                        alert('Party 已結束！');
+            if (confirm('確定訂購 ' + this.productName + '(金額: ' + this.price + ' 元) ?')) {
+                var req = {
+                    method: 'POST',
+                    url: '/api/v1/order',
+                    data: {
+                        user_id:  userID,
+                        party_id: $scope.activeParty.party_id,
+                        store_id: $scope.activeParty.store_id,
+                        product:  this.productName,
+                        price:    parseInt(this.price),
+                        note:     this.note
+                    },
+                    params: {
+                        token:          token,
+                        userID:         userID,
+                        organizationID: organizationID
                     }
-                }
-            });
+                };
 
-            /*
-            $http.post('/api/v1/order', {
-                    token: token,
-                    organizationID: organizationID,
-                    user_id: userID,
-                    party_id: $scope.activeParty.party_id,
-                    store_id: $scope.activeParty.store_id,
-                    product:  this.productName,
-                    price:    this.price,
-                    note:     this.note
-                }).then(function (response) {
+                $http(req).success(function (response) {
                     if (response.success) {
-                        alert(response.order_id);
-                }
+                        console.log(response.order_id);
+                        $scope.updateProductsListAndOrderSummaries($scope.productsList, $scope.activeParty.store_id, token, organizationID);
+                    } else {
+                        console.log(response.message);
+                        console.log(response.exception);
+                        if (response.exception === 'connectionFailed') {
+                            alert('連線錯誤！');
+                        } else if (response.exception === 'partyNotExist') {
+                            alert('請求的 Party 不存在！');
+                        } else if (response.exception === 'partyWasReady') {
+                            alert('Party 已結束！');
+                        }
+                    }
                 });
-            */
+            }
         },
         initialize: function () {
             this.productName = '';
@@ -445,6 +478,7 @@ angular.module('main')
     $scope.clickOrder = function (orderSummary) {
         if ($scope.selectOrderSummary === orderSummary) {
             $scope.selectOrderSummary = null;
+            $scope.inputOrder.initialize();
             return;
         }
         $scope.selectOrderSummary = orderSummary;
@@ -497,6 +531,7 @@ angular.module('main')
                     // Fill 
                     $scope.inputOrder.productName = selProductInStore.product_name;
                     $scope.inputOrder.price = selProductInStore.price;
+                    $scope.inputOrder.note = '';
                 }
                 else {
                     $scope.inputOrder.initialize();
@@ -504,23 +539,20 @@ angular.module('main')
             }
         });
     };
-
-
-    // display today
-    // 0 ~ 6
-    //var today = new Date('2015-7-13 10:00:00'); // for test
-    var today = new Date();
-    $scope.today = today;
     
-    var baseDate = new Date();
-    baseDate.setDate(today.getDate() - today.getDay());
+    var baseDate = new Date($scope.paramDate);
+    baseDate.setDate($scope.paramDate.getDate() - $scope.paramDate.getDay());
     //alert(baseDate);
 
     // fill weekbar
-    $scope.todayDay = today.getDay();
+    $scope.todayDay = $scope.paramDate.getDay();
     $scope.daysInWeek = [];
+    $scope.clickDate = function (date) {
+        var dayString = getDateString(date);
+        window.location.href = '/?d=' + dayString;
+    };
     for (var i = 0; i <= 6; i++) {
-        var curDate = new Date();
+        var curDate = new Date(baseDate);
 
         curDate.setDate(baseDate.getDate() + i);
         //$('.day-' + i + ' p').text(curDate);
@@ -528,8 +560,8 @@ angular.module('main')
     }
 
     // build party main frame
-    var curYear = today.getFullYear();
-    var curMonth = today.getMonth() + 1; // because return value is between 0~11
+    var curYear = $scope.paramDate.getFullYear();
+    var curMonth = $scope.paramDate.getMonth() + 1; // because return value is between 0~11
     var reqUrl = '/api/v1/parties/' + curYear + '/' + curMonth;
     var req = {
         method: 'GET',
@@ -547,32 +579,40 @@ angular.module('main')
             //console.log('today: ' + today.getTime());
             for (var i = 0; i < response.parties.length; i++) {
                 // response time format: yyyy-mm-dd hh:mm:ss
-                var start_date = new Date(response.parties[i].create_date);
-                var end_date = new Date(response.parties[i].expired_date);
+                
+                var start_date = new Date(DateStandardFormat(response.parties[i].create_date));
+                var end_date = new Date(DateStandardFormat(response.parties[i].expired_date));
                 //console.log('name: ' + response.parties[i].name);
                 //console.log('today: ' + today.getTime());
                 //console.log('start_date: ' + start_date.getTime());
                 //console.log('end_date: ' + end_date.getTime());
                 //if (start_date.getTime() <= today.getTime()
                 //    && today.getTime() <= end_date.getTime()) {
-                if (start_date.getDate() <= today.getDate() 
-                 && today.getDate() <= end_date.getDate()) {
+                if (start_date.getDate() <= $scope.paramDate.getDate() 
+                 && $scope.paramDate.getDate() <= end_date.getDate()) {
                     $scope.todayParties.push(response.parties[i]);
 
                     // active first party
-                    var lastParty = $scope.todayParties[$scope.todayParties.length-1];
-                    lastParty.active = false;
                     if ($scope.todayParties.length > 0) {
-                        $scope.activeParty = lastParty;
-                        $scope.activeParty = new Party(lastParty.name, lastParty.party_id,
-                            lastParty.creator_id, lastParty.store_id, lastParty.creator,
-                            lastParty.store, lastParty.create_date, lastParty.expired_date,
-                            lastParty.ready, lastParty.orders_count);
-                        //$scope.activeParty.partyStatus
-                        $scope.activeParty.active = true;
-                        //console.log($scope.activeParty.createDate.getMilliseconds());
-                        //console.log($scope.activeParty.expiredDate.getMilliseconds());
-                        //console.log($scope.today.getMilliseconds());
+                        var selParty = $scope.todayParties[0];
+                        if (queryPartyID !== "") {
+                            $scope.todayParties.forEach(function (party, index) {
+                                if (party.party_id == queryPartyID) {
+                                    selParty = party;
+                                }
+                            });
+                        }
+                        $scope.activeParty = selParty;
+                        $scope.activeParty = new Party(selParty.name, selParty.party_id,
+                            selParty.creator_id, selParty.store_id, selParty.creator,
+                            selParty.store, selParty.create_date, selParty.expired_date,
+                            selParty.ready, selParty.orders_count);
+                        console.log($scope.activeParty.createDate.getTime());
+                        console.log($scope.activeParty.expiredDate.getTime());
+                        console.log($scope.today.getTime());
+                        console.log($scope.today);
+                    } else {
+                        $scope.activeParty = null;
                     }
                 }
                 //alert(start_date);
@@ -582,7 +622,7 @@ angular.module('main')
 
             // initialize orderSummaries
             if ($scope.activeParty) {
-                $scope.activeStore.initialize($scope.activeParty.store_id);
+                $scope.activeStore.initialize($http, token, $scope.activeParty.store_id);
                 $scope.updateProductsListAndOrderSummaries($scope.productsList, $scope.activeParty.store_id, token, organizationID);
             }
 
@@ -594,11 +634,11 @@ angular.module('main')
         //alert('done !');
         $.material.init();
 
-        // todo: assign to HTML tab list, open on first
-        if ($scope.todayParties.length > 0) {
-            $("li.today-party").first().addClass('active');
-        }
+        
+        
     }
+    
+    console.log('可以到 https://github.com/goodogod/dinbendan 看 source code 哦 ^.<');
 })
 
 .filter('emptyCountFilter', function () {
@@ -619,4 +659,18 @@ angular.module('main')
             return '1 個：' + str;
         };
     }
+})
+
+
+.filter('productFilter', function () {
+    return function (items, wildcard) {
+      var filtered = [];
+      angular.forEach(items, function (item) {
+          if (item.product.match(wildcard)) {
+              filtered.push(item);
+          }
+      });
+      
+      return filtered;
+    };
 });

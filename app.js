@@ -7,6 +7,7 @@ var logger = require('morgan');
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser')
 var busboy = require('connect-busboy'); //middleware for form/file upload
+var favicon = require('serve-favicon');
 
 var app = express();
 
@@ -25,6 +26,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(busboy());
+app.use(favicon(path.join(__dirname, 'client', 'public','images','favicon.ico')));
 //app.use(express.methodOverride());
 //app.use(app.router);
 app.use(express.static(path.join(__dirname, 'client', 'public')));

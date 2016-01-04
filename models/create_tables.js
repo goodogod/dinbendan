@@ -7,16 +7,21 @@ var client = new pg.Client(connectionString);
 client.connect();
 // use query to run SQL query.
 
-// Create users table
-// Role: User/PartyCreator/Accountant/Admin
-// todo: add Role check
+/* 
+ * Create users table.
+ * Role: 0 ~ 10
+ *       0: User
+ *       1: Manager
+ *       10: Admin
+ * todo: add Role check
+ */
 var query = client.query(
     'CREATE TABLE users(' +
         'user_id SERIAL PRIMARY KEY,' +
         'name VARCHAR(32) not null,' +
         'password VARCHAR(32) not null,' +
         'create_date TIMESTAMP not null,' +
-        'role VARCHAR(32) not null,' +
+        'role INTEGER not null,' +
         'money NUMERIC(12, 2),' +
         'image VARCHAR(512));'
 );

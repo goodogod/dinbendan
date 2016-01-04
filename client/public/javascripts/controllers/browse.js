@@ -1,28 +1,15 @@
-/*
- * Return date time format: yyyy-MM-dd hh:mm:ss
- */
-function getDateString(date) {
-    return date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate();
-}
-
-/*
- * Return date time format: yyyy-MM-dd hh:mm:ss
- */
-function getDateTimeString(date) {
-    return getDateString(date) + ' ' + date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds(); 
-}
-
 angular.module('main')
 
-.controller('browseController', function ($scope, $http) {
+.controller('browseController', function ($scope, $http, userInfoService) {
     
     var info = getInfoFromCookies(docCookies);
     var token = info.token;
     var organizationID = info.organizationID;
     var userID = info.userID;
     
-    
-    // todo: handle browse request
+    // todo: get role
+    userInfoService.update(userID, organizationID, token);
+    $scope.userInfo = userInfoService;
     
     /*
      * storesList: Array
@@ -83,8 +70,6 @@ angular.module('main')
         updateProductsList();
     };
     
-    // todo: check privilege
-    $scope.storeCreationVisible = true;
     
     $scope.storeCreationFormVisible = false;
     $scope.onClickStoreCreationButton = function () {
@@ -203,28 +188,29 @@ angular.module('main')
             alert('未選取店家！');
             return;
         }
-        $scope.newParty.store_id = $scope.selectStore.id;
-        $http({
-            url: '/api/v1/party',
-            method: 'POST',
-            data: {
-                name: $scope.newParty.name,
-                organization_id: $scope.newParty.organization_id,
-                creator_id:      $scope.newParty.creator_id,
-                store_id:        $scope.newParty.store_id,
-                create_date:     getDateTimeString($scope.newParty.create_date),
-                expired_date:    getDateTimeString($scope.newParty.expired_date),
-                token:           token
-            }
-        })
-        .success(function (res) {
-            //$scope.partyAlertVisible = true;
-            //alert(JSON.stringify(res));
-        })
-        .error(function (res) {
-            alert(JSON.stringify(res));
-        });
-        //alert(JSON.stringify(newParty));
+        if (confirm('確定新增' + PARTY + ': ' + $scope.newParty.name + ' ?')) {
+            $scope.newParty.store_id = $scope.selectStore.id;
+            $http({
+                url: '/api/v1/party',
+                method: 'POST',
+                data: {
+                    name:            $scope.newParty.name,
+                    organization_id: $scope.newParty.organization_id,
+                    creator_id:      $scope.newParty.creator_id,
+                    store_id:        $scope.newParty.store_id,
+                    create_date:     getDateTimeString($scope.newParty.create_date),
+                    expired_date:    getDateTimeString($scope.newParty.expired_date),
+                    token:           token
+                }
+            })
+            .then(function (res) {
+                $scope.partyCreationFormVisible = false;
+            })
+            .error(function (res) {
+                console.log(JSON.stringify(res));
+            });
+            //alert(JSON.stringify(newParty));
+        }
     };
     
     

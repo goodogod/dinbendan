@@ -25,19 +25,38 @@ angular.module('main')
      *  }
      */
     $scope.usersList = [];
-    getUsersList($http, token, $scope.usersList, function (list) {
+    function submitRecharge() {
+        var curUser = this;
+        if (confirm('確定幫 ' + curUser.name + ' 儲值 ' + curUser.inputAmount + ' 元 ?')) {
+            // recharge request
+            $http({
+                url: 'api/v1/user/recharge',
+                method: 'PUT',
+                data: {
+                    user_id: curUser.id,
+                    amount: curUser.inputAmount,
+                    token: token
+                }
+            })
+            .success(function (res) {
+                if (res.success) {
+                    getUsersList($http, token, $scope.usersList, initializeUsers);
+                    //curUser.money = res.money;
+                    //curUser.inputAmount = 0.0;
+                }
+            });
+        }
+    };
+    
+    function initializeUsers(list) {
         // attach other fields
         list.forEach(function (value, index) {
             list[index].inputAmount = 0.0;
-            list[index].recharge = function () {
-                if (confirm('確定幫 ' + this.name + ' 儲值 ' + this.inputAmount + '元 ?')) {
-                    // todo: recharge request
-                    
-                    // todo: initialize inputAmount
-                }
-            };
+            list[index].recharge = submitRecharge;
         });
-    });
+    }
+    
+    getUsersList($http, token, $scope.usersList, initializeUsers);
 })
 
 .filter('userFilter', function () {

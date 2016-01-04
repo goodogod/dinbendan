@@ -40,7 +40,7 @@
                     <div class="stores-name-list panel-body">
                         <table class="table table-hover">
                             <tbody>
-                                <tr ng-repeat="store in storesList" ng-class="{info: store.id == selectStore.id}">
+                                <tr ng-repeat="store in storesList" ng-class="{active: store.id == selectStore.id}">
                                     <td>
                                         <a href="" ng-click="clickStore($index)">{{store.name}}</a>
                                     </td>
@@ -49,8 +49,8 @@
                         </table>
                     </div>
 
-
-                    <div class="store-creation" ng-show="storeCreationVisible">
+                    <!-- Role: Manager -->
+                    <div class="store-creation" ng-show="userInfo.role >= 1">
                         <div class="ready-to-create" ng-show="!storeCreationFormVisible">
                             <button class="btn btn-default btn-block" ng-click="onClickStoreCreationButton()">
                                 新增店家
@@ -77,32 +77,33 @@
         </div>
 
         <div class="store-view col-md-3 panel panel-default ">
-          <div ng-show="selectStore !=n ull ">
-            <div class="image-view ">
+          <div ng-show="selectStore != null">
+            <div class="image-view">
               <!-- todo: show image if exist -->
               <!-- ngSrc trick for update -->
-              <img ng-src="{{ selectStore.image || '//:0' }} " alt="Description " class="img-thumbnail ">
+              <img ng-src="{{ selectStore.image || '//:0' }}" alt="Description" class="img-thumbnail">
               <br>
-              <button type="button " class="btn btn-default btn-block " data-toggle="modal " data-target="#myModal ">
-                上傳圖片
-              </button>
-              <br>
-              <div class="modal fade " id="myModal " tabindex="-1 " role="dialog " aria-labelledby="myModalLabel ">
-                <div class="modal-dialog " role="document ">
-                  <div class="modal-content ">
-                    <div class="modal-header ">
-                      <button type="button " class="close " data-dismiss="modal " aria-label="Close
-                                    "><span aria-hidden="true ">&times;</span></button>
-                      <h4 class="modal-title " id="myModalLabel ">Modal title</h4>
+              <div class="image-upload" ng-show="userInfo.role >= 1">
+                <button type="button " class="btn btn-default btn-block" data-toggle="modal" data-target="#myModal">
+                    上傳圖片
+                </button>
+                <br>
+                <div class="modal fade " id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+                    <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="myModalLabel">Modal title</h4>
+                        </div>
+                        <div class="modal-body">
+                        <div ng-include="'file-upload'"></div>
+                        </div>
+                        <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">關閉</button>
+                        <button type="button" class="btn btn-success" ng-click="onUploadStoreImageDone()">確認</button>
+                        </div>
                     </div>
-                    <div class="modal-body ">
-                      <div ng-include=" 'file-upload' "></div>
                     </div>
-                    <div class="modal-footer ">
-                      <!-- button type="button " class="btn btn-default " data-dismiss="modal ">關閉</button -->
-                      <button type="button " class="btn btn-success " ng-click="onUploadStoreImageDone() ">確認</button>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -117,7 +118,7 @@
             
             <br>
             
-            <div class="party-creation " ng-show="partyCreationVisible ">
+            <div class="party-creation" ng-show="partyCreationVisible && (userInfo.role >= 1)">
               <button class="ready-to-create-party btn btn-default btn-block " ng-show="!partyCreationFormVisible
                                     " ng-click="onClickPartyCreationButton() ">
                   新增 Party
@@ -143,7 +144,7 @@
         </div>
 
         <!-- store-detail-view -->
-        <div class="store-detail-view col-md-6 panel panel-default " ng-show="selectStore !=n ull ">
+        <div class="store-detail-view col-md-6 panel panel-default " ng-show="selectStore != null ">
           <div class="products-view row ">
             <table class="table table-hover ">
               <thead>
@@ -153,21 +154,21 @@
                 </tr>
               </thead>
               <tbody>
-                <tr ng-repeat="product in productsList " ng-class="{info: product.product_id==s electProduct.product_id} ">
+                <tr ng-repeat="product in productsList " ng-class="{active: product.product_id == selectProduct.product_id} ">
                   <td>
                     <a href=" " ng-click="clickProduct($index) ">{{product.product_name}}</a>
                   </td>
-                  <td>{{product.price}}</td>
+                  <td>{{product.price | currency}}</td>
                 </tr>
               </tbody>
             </table>
             
-            <div class="product-creation " ng-show="newProduct.enable ">
+            <div class="product-creation" ng-show="newProduct.enable && userInfo.role >= 1">
               <button class="ready-to-create-product btn btn-default btn-block " ng-show="!newProduct.formVisible
                                     " ng-click="newProduct.onClickFormVisible() ">
                   新增商品
               </button>
-              <div class="product-creation-form " ng-show="newProduct.formVisible ">
+              <div class="product-creation-form" ng-show="newProduct.formVisible">
                 <form novalidate>
                   <div class="form-group ">
                     <label>商品名稱</label>
@@ -183,7 +184,7 @@
             </div>
           </div>
           <br>
-          <div class="comments-view " ng-show="selectProduct !=n ull ">
+          <div class="comments-view " ng-show="selectProduct != null">
             <div class="comments-list ">
               <div class="panel panel-default ">
                 <div class="panel-heading ">評論：{{selectStore.name}} 的 {{selectProduct.product_name}}</div>
@@ -205,27 +206,27 @@
                       <form novalidate>
                         <!-- radio: 1, 2, 3, 4, 5 -->
                         <label>評分：</label>
-                        <label class="radio-inline ">
-                          <input type="radio " name="stars " value="1 " ng-model="newComment.stars ">
+                        <label class="radio-inline">
+                          <input type="radio" name="stars" value="1" ng-model="newComment.stars">
                         1</label>
-                        <label class="radio-inline ">
-                          <input type="radio " name="stars " value="2 " ng-model="newComment.stars ">
+                        <label class="radio-inline">
+                          <input type="radio" name="stars" value="2" ng-model="newComment.stars">
                         2</label>
-                        <label class="radio-inline ">
-                          <input type="radio " name="stars " value="3 " checked ng-model="newComment.stars ">
+                        <label class="radio-inline">
+                          <input type="radio" name="stars" value="3" checked ng-model="newComment.stars">
                         3</label>
-                        <label class="radio-inline ">
-                          <input type="radio " name="stars " value="4 " ng-model="newComment.stars ">
+                        <label class="radio-inline">
+                          <input type="radio" name="stars" value="4" ng-model="newComment.stars">
                         4</label>
-                        <label class="radio-inline ">
-                          <input type="radio " name="stars " value="5 " ng-model="newComment.stars ">
+                        <label class="radio-inline">
+                          <input type="radio" name="stars" value="5" ng-model="newComment.stars">
                         5</label>
                         <br>
                         <label>評論：</label>
-                        <textarea class="form-control " row="3 " placeholder="最多 255 個字 " ng-model="newComment.text "></textarea>
+                        <textarea class="form-control" row="3" placeholder="最多 255 個字" ng-model="newComment.text "></textarea>
                         <br>
-                        <button type="submit " class="btn btn-success pull-right " ng-click="newComment.onClickSubmit() ">發表</button>
-                        <button type="button " class="btn btn-default pull-right " ng-click="newComment.onClickCancel() ">取消</button>
+                        <button type="submit" class="btn btn-success pull-right" ng-click="newComment.onClickSubmit() ">發表</button>
+                        <button type="button" class="btn btn-default pull-right" ng-click="newComment.onClickCancel() ">取消</button>
                       </form>
                     </div>
                   </div>
@@ -248,6 +249,10 @@
   <script src="javascripts/cookies.js "></script>
   <!-- user scripts -->
   <script src="javascripts/browse-module.js "></script>
+  
+  <!-- angular services -->
+  <script src="javascripts/services/user-info.js "></script>
+  
   <script src="javascripts/controllers/controller-tools.js "></script>
   <script src="javascripts/controllers/header.js "></script>
   <script src="javascripts/controllers/browse.js "></script>

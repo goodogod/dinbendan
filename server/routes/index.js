@@ -64,7 +64,12 @@ function uploadImage(req, after) {
             // send to S3
             console.log('Sending to S3 ...');
             var body = fs.createReadStream(tmpFile) /* .pipe(zlib.createGzip()) */;
-            var params = {Bucket: S3_BUCKET, Key: s3Key, Body: body};
+            var params = {
+                Bucket:      S3_BUCKET, 
+                Key:         s3Key, 
+                Body:        body,
+                ContentType: 'image/jpeg'
+            };
             var s3 = new AWS.S3();
             //var file = fs.createReadStream(tmpFile);
             s3.upload(params, function (err, data) {
@@ -133,12 +138,13 @@ function partyIsReady(partyID, thenEvent, errorEvent) {
 }
 
 // For json web token.
-var secretString = 'haha';
+var secretString = process.env.TOKEN_KEY;
 
 // AWS environment.
 var S3_BUCKET =             process.env.S3_BUCKET;
 var AWS_ACCESS_KEY =        process.env.AWS_ACCESS_KEY_ID;
 var AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY;
+
 AWS.config.update({
     accessKeyId:     AWS_ACCESS_KEY, 
     secretAccessKey: AWS_SECRET_ACCESS_KEY
@@ -385,7 +391,7 @@ router.use('/api', function(req, res, next) {
               organization_id: integer,
               organization: string,
               create_date: string,
-              role: string,
+              role: integer,
               money: string },
               { ... }, ...
             ]
@@ -422,6 +428,54 @@ router.get('/api/v1/users', function(req, res) {
               message: 'Query error: ' + err
           });
         }
+    });
+});
+
+/*
+ * path: /api/v1/user/recharge
+ * role: acountant/admin
+ * method: PUT
+ * body: {
+ *   user_id: integer,
+ *   amount: float (+-)
+ * }
+ * 
+ * response: {
+ *   success: boolean,
+ *   message: string,
+ *   money: float (available if success == true)
+ *   exception: (available if success == false)
+ *     paramInvalid
+ * }
+ */
+router.put('/api/v1/user/recharge', function (req, res) {
+    // todo: check role
+    
+    // todo: check parameters
+    var uiUserID = req.body.user_id;
+    var uiAmount = req.body.amount;
+    pg.connect(connectionString, function(err, client, done) {
+        var queryString = sq.updateUserMoney_F2.format(uiUserID, uiAmount);
+        console.log(queryString);
+        //var result = 0.0;
+        var query = client.query(queryString, function (err, results) {
+            if (err) {
+                return res.json({
+                    success: false,
+                    message: err
+                });
+            }
+            
+            query.on('end', function() {
+                client.end();
+
+                return res.json({
+                    success: true,
+                    message: 'Recharge success.',
+                    money: parseFloat(results.rows[0].money)
+                });
+            });
+        });
     });
 });
 
@@ -798,7 +852,7 @@ router.put('/api/v1/party/:party_id/ready', function (req, res) {
   response: {
       success: boolean,
       message: string,
-      exception: 
+      exception: (available if success == false) 
         connectionFailed
         partyNotExist
         partyWasReady

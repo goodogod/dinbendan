@@ -92,6 +92,15 @@ module.exports.setPartyReadyAndUpdateUsersMoney_F1 =
   + 'COMMIT;';
 
 /*
+ * Increase or decrease user's money.
+ * Parameter:
+ *   0: user_id
+ *   1: amount
+ */
+module.exports.updateUserMoney_F2 =
+  'UPDATE users SET money = money + {1} WHERE user_id = {0} RETURNING money;';
+
+/*
  * Get party info by order ID.
  * Parameters:
  *   0: order_id.

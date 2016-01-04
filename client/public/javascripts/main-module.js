@@ -10,5 +10,4 @@ $(document).ready(function() {
 
 
 // create angular module
-angular.module('main', ['timer']);
-
+var app = angular.module('main', ['timer']);
