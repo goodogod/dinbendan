@@ -66,7 +66,6 @@ angular.module('main')
      *  Create store fields.
      */
     $scope.onUploadStoreImageDone = function () {
-        alert('上傳完成！');
         var orgSelStoreID = $scope.selectStore.id;
         updateProductsList();
     };
