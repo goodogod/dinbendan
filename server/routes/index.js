@@ -1316,6 +1316,7 @@ router.put('/api/v1/store/:store_id', function (req, res) {
     // todo: prevent illegal request field
     
     uploadImage(req, function (imagePath) {
+        console.log('imagePath: ' + imagePath);
         pg.connect(connectionString, function(err, client, done) {
             cols.push('image');
             vals.push((imagePath) ? sq.SQLString(imagePath) : sq.SQLString(''));
