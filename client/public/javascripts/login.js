@@ -1,3 +1,4 @@
+/* global docCookies */
 
 
 $(document).ready(function() {

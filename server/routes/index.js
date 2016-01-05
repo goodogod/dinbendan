@@ -40,6 +40,7 @@ function getUniqName() {
  *   If post file does exist, return path; otherwise, return undefine.
  */
 function uploadImage(req, after) {
+    console.log('Start uploadImage');
     if (!req.busboy) {
         after(undefined);
         return;
