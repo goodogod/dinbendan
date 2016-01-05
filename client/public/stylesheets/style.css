@@ -50,11 +50,31 @@ table.table.table-hover tr.ng-scope.active td {
     font-weight: bold;
 }
 
+/**/
 /*
-.table tbody tr > td.active {
-  background-color: #D7A554 !important;
+tr {
+width: 100%;
+display: inline-table;
 }
 */
+
+
+.table-container {
+    height: 300px;
+    overflow: auto;
+}
+
+.main-layout {
+    height: 85vh;
+    overflow: auto;
+}
+
+.main-layout-small {
+    height: 77vh;
+    overflow: auto;
+}
+
+
 
 /****/
 .navbar-default {

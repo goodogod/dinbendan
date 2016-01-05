@@ -33,19 +33,13 @@
                 </ul>
             </div>
 
-            <!-- Empty row -->
-            <div class="row">
-                </br>
-            </div>
-
-
             <!-- party and orders info -->
             <div class="no-party-view" ng-show="todayParties.length == 0">
                 <a>今天沒有團喔！</a>
             </div>
             <div class="row parties-orders" ng-show="todayParties.length > 0">
                 <!-- product-info -->
-                <div class="col-md-4 panel panel-default">
+                <div class="col-md-4 panel panel-default main-layout-small">
 
                     <!-- parties-list; show as combobox -->
                     <div class="dropdown parties-list" ng-show="todayParties.length > 0">
@@ -68,7 +62,7 @@
                     <!-- store info -->
                     <div ng-show="selectOrderSummary == null">
                         <p>{{activeStore.name}}</p>
-                        <a href="{{ activeStore.image }}" target="_blank" class="thumbnail"">
+                        <a href="{{ activeStore.image }}" target="_blank" class="thumbnail">
                             <img ng-src="{{ activeStore.image || '//:0' }}" alt="Description">
                         </a>
                     </div>
@@ -104,7 +98,7 @@
                 </div>
                 
                 <!-- party-info -->
-                <div class="col-md-8 panel panel-default">
+                <div class="col-md-8 panel panel-default main-layout-small">
                     <div class="party-info">
 
                         <div class="row">
@@ -140,7 +134,7 @@
                                             <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                                             <h4 class="modal-title">{{ activeParty.name }}</h4>
                                         </div>
-                                        <div class="modal-body">
+                                        <div class="modal-body table-container">
                                             <p>店家：{{ activeStore.name }}</p>
                                             <p>電話：{{ activeStore.phoneNumber }}</p>
                                             <p>滿多少外送：{{ activeStore.minSpending }}</p>
@@ -184,7 +178,7 @@
                         </div>
                         <!-- orders list -->
                         <div class="row">
-                            <div class="orders-list">
+                            <div class="orders-list table-container">
                                 <!-- table -->
                                 <table class="table table-hover ">
                                     <thead>
