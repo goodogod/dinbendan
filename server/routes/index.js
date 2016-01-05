@@ -1290,6 +1290,8 @@ router.post('/api/v1/store', function (req, res) {
   }
 */
 router.put('/api/v1/store/:store_id', function (req, res) {
+    console.log('Enter PUT store ...');
+    
     var uiStoreID = req.params.store_id;
     var uiName = req.body.name;
     var uiPhoneNumber = req.body.phone_number;
