@@ -606,7 +606,7 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
             ' ORDER BY parties.party_id ASC;';
 
         queryString = queryString.format(queryOrganization, uiYear, uiMonth, lastDay);
-        //console.log(queryString);
+        console.log(queryString);
         var query = client.query(queryString);
 
         if (err) {
