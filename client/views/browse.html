@@ -161,8 +161,8 @@
                                             <input type="text " class="form-control" ng-model="newProduct.data.name " placeholder="不可為空" required>
                                             <label>售價</label>
                                             <input type="text " class="form-control" ng-model="newProduct.data.price " placeholder="填入超過 0 的金額 " required>
-                                            <br>
-                                            <button type="submit" class="btn btn-success pull-right" ng-click="newProduct.onSubmit(newProduct)">添加</button>
+                                            <br/>
+                                            <button type="submit" class="btn btn-success pull-right" ng-click="newProduct.onSubmit(newProduct)" ng-disabled="newProduct.data.price <= 0">添加</button>
                                             <button type="button" class="btn btn-default pull-right" ng-click="newProduct.onCancel()">取消</button>
                                         </div>
                                     </form>
@@ -175,8 +175,7 @@
                                 <thead>
                                     <tr>
                                         <th>
-                                            <span>商品</span>
-                                            <input type="text" class="col-lg-3" placeholder="篩選器" >
+                                            <input type="text" class="col-lg-3" placeholder="商品篩選器 ...">
                                         </th>
                                         <th>售價</th>
                                     </tr>

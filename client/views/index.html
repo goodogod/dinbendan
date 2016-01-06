@@ -56,12 +56,18 @@
                         
                         <!-- span class="glyphicons glyphicons-edit"></span -->
                     </div>
+                    <div>
+                        <span>{{activeParty.createDate | date: 'hh:mm:ss' }}</span>
+                        <span> ~ </span>
+                        <span>{{activeParty.expiredDate | date: 'hh:mm:ss' }}</span>
+                    </div>
                     
-                    <br>
+                    <br/>
 
                     <!-- store info -->
                     <div ng-show="selectOrderSummary == null">
-                        <p>{{activeStore.name}}</p>
+                        <p>店家：{{activeStore.name}}</p>
+                        
                         <a href="{{ activeStore.image }}" target="_blank" class="thumbnail">
                             <img ng-src="{{ activeStore.image || '//:0' }}" alt="Description">
                         </a>
@@ -233,7 +239,7 @@
                                     <!-- ready to order -->
                                     <div class="form-group">
                                         <!-- submission -->
-                                        <input type="submit" id="submit" value="訂購" class="btn btn-success btn-lg btn-block" />
+                                        <input type="submit" id="submit" value="訂購" class="btn btn-success btn-lg btn-block" ng-disabled="(inputOrder.productName == '') || (inputOrder.price == 0)" />
                                     </div>
                                 </div>
 

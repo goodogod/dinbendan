@@ -1,6 +1,12 @@
-angular.module('main')
+/* global docCookies */
+/* global getInfoFromCookies */
+app
+.factory('selectStoreService', function () {
+    return { data: null };
+});
 
-.controller('browseController', function ($scope, $http, userInfoService) {
+app
+.controller('browseController', function ($scope, $http, userInfoService, selectStoreService) {
     
     var info = getInfoFromCookies(docCookies);
     var token = info.token;
@@ -16,7 +22,12 @@ angular.module('main')
      * store: { id, name, phone_number, create_date, min_spending, image }
      */
     $scope.storesList = [];
-    $scope.selectStore = null;
+    function setSelectStore(value) {
+        $scope.selectStore = value;
+        selectStoreService.data = value;
+    }
+    setSelectStore(null);
+    
     /*
      * productsList: Array
      * products: [ { product_id, product_name, store_id, price }, { ... }, ... ]
@@ -26,7 +37,8 @@ angular.module('main')
     
     /* clear all stores data */
     function clearStores() {
-        $scope.selectStore = null;
+        setSelectStore(null);
+        //$scope.selectStore = null;
         $scope.selectProduct = null;
         $scope.storesList.length = 0;
         $scope.productsList.length = 0;
@@ -49,13 +61,15 @@ angular.module('main')
         if ($scope.selectStore 
         && $scope.selectStore.id == $scope.storesList[storeIndex].id) {
             //clearStores();
-            $scope.selectStore = null;
+            setSelectStore(null);
+            //$scope.selectStore = null;
             $scope.selectProduct = null;
             $scope.productsList.length = 0;
         }
         else {
             //updateStoresList();
-            $scope.selectStore = $scope.storesList[storeIndex];
+            setSelectStore($scope.storesList[storeIndex]);
+            //$scope.selectStore = $scope.storesList[storeIndex];
             updateProductsList();
         }
     };
@@ -66,8 +80,9 @@ angular.module('main')
      *  Create store fields.
      */
     $scope.onUploadStoreImageDone = function () {
-        var orgSelStoreID = $scope.selectStore.id;
-        updateProductsList();
+        //var orgSelStoreID = $scope.selectStore.id;
+        //updateProductsList();
+        window.location.href = '/browse';
     };
     
     
@@ -252,33 +267,35 @@ angular.module('main')
                 alert('請選擇店家！');
                 return;
             }
-            //alert('Clcik submit !');
-            $http({
-                url: '/api/v1/product',
-                method: 'POST',
-                data: {
-                    store_id: $scope.selectStore.id,
-                    name: this.data.name,
-                    price: this.data.price,
-                    token: token
-                }
-            })
-            .success(function (res) {
-                if (res.success) {
-                    updateProductsList();
-                    $scope.newProduct.initialize();
-                    //updateStoresList();
-                }
-                else {
-                    console.log(res.message);
-                    alert('新增店家出錯！');
-                }
-            })
-            .error(function (res) {
-                console.log('POST product failed.');
-                console.log(JSON.stringify(res));
-                alert('新增店家出錯 ...');
-            });
+            
+            if (confirm('添加商品 ' + this.date.name + '，售價 ' + this.price + ' 元？')) {
+                $http({
+                    url: '/api/v1/product',
+                    method: 'POST',
+                    data: {
+                        store_id: $scope.selectStore.id,
+                        name: this.data.name,
+                        price: this.data.price,
+                        token: token
+                    }
+                })
+                .success(function (res) {
+                    if (res.success) {
+                        updateProductsList();
+                        $scope.newProduct.initialize();
+                        //updateStoresList();
+                    }
+                    else {
+                        console.log(res.message);
+                        alert('新增商品出錯！');
+                    }
+                })
+                .error(function (res) {
+                    console.log('POST product failed.');
+                    console.log(JSON.stringify(res));
+                    alert('新增商品出錯 ...');
+                });
+            }
         },
         onCancel: function () {
             this.formVisible = false;
@@ -343,14 +360,18 @@ angular.module('main')
 })
 
 
-.controller('fileUploader', ['$scope', 'FileUploader', function($scope, FileUploader) {
+.controller('fileUploader', ['$scope', 'FileUploader', 'selectStoreService', function($scope, FileUploader, selectStoreService) {
     var info = getInfoFromCookies(docCookies);
     var token = info.token;
     var organizationID = info.organizationID;
     var userID = info.userID;
     
+    $scope.selectStoreService = selectStoreService;
+    
+    // default value
+    var reqUrl = 'api/v1/store/';
     var uploader = $scope.uploader = new FileUploader({
-        url: '/api/v1/store/1'  /* + $scope.selectStore.id */,
+        url: reqUrl,
         method: 'PUT'
     });
     uploader.headers['x-access-token'] = token;
@@ -363,6 +384,7 @@ angular.module('main')
             return this.queue.length < 10;
         }
     });
+    
 
     // CALLBACKS
 
@@ -370,6 +392,11 @@ angular.module('main')
         console.info('onWhenAddingFileFailed', item, filter, options);
     };
     uploader.onAfterAddingFile = function(fileItem) {
+        //console.log(JSON.stringify($scope.selectStoreService));
+        var reqUrl = '/api/v1/store/'  + $scope.selectStoreService.data.id;
+        console.log(reqUrl);
+        //$scope.uploader.url = reqUrl;
+        fileItem.url = reqUrl;
         console.info('onAfterAddingFile', fileItem);
     };
     uploader.onAfterAddingAll = function(addedFileItems) {
@@ -398,6 +425,7 @@ angular.module('main')
     };
     uploader.onCompleteAll = function() {
         console.info('onCompleteAll');
+        alert('上傳成功！');
     };
 
     console.info('uploader', uploader);
