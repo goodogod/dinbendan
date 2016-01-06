@@ -594,7 +594,7 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
             ' TO_CHAR(parties.expired_date, \'yyyy-mm-dd hh24:mm:ss\') AS expired_date,'+
             ' parties.ready AS ready,'+
             ' (SELECT COUNT(*) FROM orders WHERE parties.party_id = orders.party_id) AS order_count'+
-            ' FROM parties, users, stores, orders'+
+            ' FROM parties, users, stores'+
             ' WHERE'+
             ' (parties.organization_id = {0}'+
             ' AND parties.creator_id = users.user_id'+
