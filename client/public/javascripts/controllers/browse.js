@@ -268,7 +268,7 @@ app
                 return;
             }
             
-            if (confirm('添加商品 ' + this.date.name + '，售價 ' + this.price + ' 元？')) {
+            if (confirm('添加商品 ' + this.data.name + '，售價 ' + this.data.price + ' 元？')) {
                 $http({
                     url: '/api/v1/product',
                     method: 'POST',
