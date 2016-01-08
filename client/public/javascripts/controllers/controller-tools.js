@@ -23,7 +23,7 @@ function getInfoFromCookies (cookies) {
  * Get stores.
  * Return: [ { id, name }, { ... }, ... ]
  */
-function getStoresList($http, token, outStoresList) {
+function getStoresList($http, token, outStoresList, successCallback) {
     var req = {
         method: 'GET',
         url: '/api/v1/stores',
@@ -36,6 +36,9 @@ function getStoresList($http, token, outStoresList) {
         if (response.success) {
             for (var i = 0; i < response.stores.length; i++) {
                 outStoresList.push(response.stores[i]);
+            }
+            if (successCallback) {
+                successCallback();
             }
         }
     });

@@ -1,8 +1,50 @@
+/* global app */
 /* global docCookies */
 /* global getInfoFromCookies */
+
+/* Update store from server. */
+function UpdateStore($http, token, storeID, field, value, successCallback) {
+    var data = {};
+    data[field] = value;
+    data['token'] = token;
+    
+    return $http.put('/api/v1/store/' + storeID, data)
+    .success(function (res) {
+        successCallback();
+        if (res.success) {
+            return true;
+        } else {
+            return res.message;
+        }
+    })
+    .error(function (res) {
+        return 'server connection failed.';
+    });
+}
+
+/* text validation, xeditable compatible */
+function validateText(inputText, orginText, fieldCaption, updateCallback) {
+    if (inputText === orginText) {
+        return false;
+    } else if (inputText === '') {
+        return fieldCaption + '不能為空！';
+    } else if (confirm('確定修改' + fieldCaption + '為 ' + inputText + '？')) {
+        return updateCallback;
+    } else {
+        return false;
+    }
+}
+
+/* Initialize controllers */
 app
+
+// share data between controllers.
 .factory('selectStoreService', function () {
     return { data: null };
+});
+
+app.run(function(editableOptions) {
+    editableOptions.theme = 'bs3'; // bootstrap3 theme. Can be also 'bs2', 'default'
 });
 
 app
@@ -19,14 +61,59 @@ app
     
     /*
      * storesList: Array
-     * store: { id, name, phone_number, create_date, min_spending, image }
+     * store: { 
+     *   id, 
+     *   name, 
+     *   phone_number, 
+     *   create_date, 
+     *   min_spending, 
+     *   image,
+     * 
+     *   newName,
+     *   newPhoneNumber,
+     *   newMinSpending
+     *  }
      */
     $scope.storesList = [];
     function setSelectStore(value) {
         $scope.selectStore = value;
+        // for controller comunication
         selectStoreService.data = value;
     }
     setSelectStore(null);
+    
+    
+    
+    $scope.onUpdateStoreName = function (data) {
+        return UpdateStore($http, token, $scope.selectStore.id, 'name', data);
+    };
+    
+    $scope.onUpdateStoreName = function (data) {
+        var updateFunc = UpdateStore($http, token, $scope.selectStore.id, 'name', data, updateStoresList);
+        return validateText(
+            data.trim(), 
+            $scope.selectStore.name.trim(), 
+            '商品',
+            updateFunc);
+    };
+    
+    $scope.onUpdateStorePhoneNumber = function (data) {
+        var updateFunc = UpdateStore($http, token, $scope.selectStore.id, 'phone_number', data, updateStoresList);
+        return validateText(
+            data.trim(), 
+            $scope.selectStore.phone_number.trim(), 
+            '電話',
+            updateFunc);
+    };
+    
+    $scope.onUpdateStoreMinSpending = function (data) {
+        var updateFunc = UpdateStore($http, token, $scope.selectStore.id, 'min_spending', data, updateStoresList);
+        return validateText(
+            data.trim(), 
+            $scope.selectStore.min_spending.trim(), 
+            '滿多少外送',
+            updateFunc);
+    };
     
     /*
      * productsList: Array
@@ -46,8 +133,25 @@ app
     }
     /* update stores list and selected store. */
     function updateStoresList() {
+        var orgSelStoreID = -1;
+        if ($scope.selectStore) {
+            orgSelStoreID = $scope.selectStore.id;
+        }
+        setSelectStore(null);
         clearStores();
-        getStoresList($http, token, $scope.storesList);
+        getStoresList($http, token, $scope.storesList, function () {
+            
+            $scope.storesList.forEach(function (store, index, list) {
+                // add edit field
+                store.newName = store.name;
+                store.newPhoneNumber = store.phone_number;
+                store.newMinSpending = store.min_spending;
+                if (store.id == orgSelStoreID) {
+                    setSelectStore(store);
+                }
+            })
+            
+        });
         //clearProducts();
         //getProductsList($http, token, $scope.selectStore.id, $scope.productsList);
     }
@@ -74,7 +178,8 @@ app
         }
     };
     
-    getStoresList($http, token, $scope.storesList);
+    //getStoresList($http, token, $scope.storesList);
+    //updateStoresList();
     
     /*
      *  Create store fields.
@@ -105,7 +210,12 @@ app
     $scope.newStore = {
         name: '',
         phone_number: '',
-        min_spending: 0
+        min_spending: 0,
+        initialize: function () {
+            this.name = '';
+            this.phone_number = '';
+            this.min_spending = 0;
+        }
     };
     $scope.onSubmitNewStore = function(newStore) {
         if (newStore.name == '') {
@@ -123,21 +233,27 @@ app
             return;
         }
         
-        var postData = angular.copy(newStore);
-        postData.token = token;
-        $http({
-            url: '/api/v1/store',
-            method: 'POST',
-            data: postData
-            
-        })
-        .success(function (res) {
-            $scope.storesList.length = 0;
-            getStoresList($http, token, $scope.storesList);
-        })
-        .error(function (res) {
-            alert(JSON.stringify(res));
-        });
+        if (confirm('確定新增店家：' + newStore.name + '？')) {
+            var postData = angular.copy(newStore);
+            postData.token = token;
+            $http({
+                url: '/api/v1/store',
+                method: 'POST',
+                data: postData
+                
+            })
+            .success(function (res) {
+                $scope.storesList.length = 0;
+                updateStoresList();
+            })
+            .error(function (res) {
+                alert(JSON.stringify(res));
+            })
+            .finally(function() {
+                $scope.newStore.initialize()
+                angular.element('.new-store-name').trigger('focus');
+            });
+        }
     }
     $scope.onClickNewStoreCancel = function () {
         $scope.storeCreationFormVisible = false;
@@ -220,9 +336,6 @@ app
             })
             .then(function (res) {
                 $scope.partyCreationFormVisible = false;
-            })
-            .error(function (res) {
-                console.log(JSON.stringify(res));
             });
             //alert(JSON.stringify(newParty));
         }
@@ -289,6 +402,7 @@ app
                         console.log(res.message);
                         alert('新增商品出錯！');
                     }
+                    angular.element('.new-product-name').trigger('focus');
                 })
                 .error(function (res) {
                     console.log('POST product failed.');
@@ -357,6 +471,8 @@ app
             this.formVisible = false;
         }
     };
+    
+    updateStoresList();
 })
 
 

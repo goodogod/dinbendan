@@ -140,7 +140,7 @@
                                             <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                                             <h4 class="modal-title">{{ activeParty.name }}</h4>
                                         </div>
-                                        <div class="modal-body table-container">
+                                        <div class="modal-body">
                                             <p>店家：{{ activeStore.name }}</p>
                                             <p>電話：{{ activeStore.phoneNumber }}</p>
                                             <p>滿多少外送：{{ activeStore.minSpending }}</p>
@@ -154,9 +154,9 @@
                                                     </tr>
                                                 </thead>
                                                 <tr ng-repeat="orderResult in activePartyResult.orderResults">
-                                                    <td>{{orderResult.product}}</td>
-                                                    <td>{{orderResult.price | emptyCountFilter}}</td>
-                                                    <td>{{orderResult.users.length | emptyCountFilter}}</td>
+                                                    <td>{{ orderResult.product }}</td>
+                                                    <td>{{ orderResult.price | currency }}</td>
+                                                    <td>{{ orderResult.users.length | emptyCountFilter }}</td>
                                                     <td>
                                                         <ul>
                                                             <li ng-repeat="user in orderResult.users">
@@ -164,6 +164,11 @@
                                                             </li>
                                                         </ul>
                                                     </td>
+                                                </tr>
+                                                <tr>
+                                                    <td><b>Total</b></td>
+                                                    <td><b>{{ activePartyResult.getTotalPrice() | currency }}</b></td>
+                                                    <td></td>
                                                 </tr>
                                                 <tbody>
 
@@ -173,7 +178,7 @@
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-default" data-dismiss="modal">關閉</button>
-                                            <button type="button" class="btn btn-success" ng-click="activePartyResult.onMakePartyReady()">扣款！</button>
+                                            <button type="button" class="btn btn-success" ng-click="activePartyResult.onMakePartyReady()" ng-show="userInfo.role >= 2">扣款！</button>
                                         </div>
                                     </div>
                                     <!-- /.modal-content -->
@@ -198,8 +203,8 @@
                                         <tr ng-repeat="orderSummary in orderSummaries | productFilter:productFilterValue" ng-class="{active: orderSummary === selectOrderSummary}">
                                             <td>
                                                 <a href="" ng-click="clickOrder(orderSummary)">
-                            {{orderSummary.product}}
-                          </a>
+                                                    {{orderSummary.product}}
+                                                </a>
                                             </td>
                                             <td>{{orderSummary.price}}</td>
                                             <td>

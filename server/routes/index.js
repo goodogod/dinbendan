@@ -8,6 +8,7 @@ var AWS = require('aws-sdk');
 var uuid = require('node-uuid');
 var zlib = require('zlib');
 var sq = require('../../models/query.js');
+var status_code = require('./status-code');
 //var session = require('express-session');
 var connectionString = require(path.join(__dirname, '../../', 'config'));
 
@@ -270,7 +271,15 @@ router.get('/login', function (req, res, next) {
 /* -------------------------------------------------------------------------- */
 // API area
 
-// get auth token
+/* get auth token
+ * res: {
+ *   success: boolean,
+ *   message: string,
+ *   token: string,
+ *   user_id: integer,
+ *   organization_id: integer
+ * }
+ */
 router.post('/api/v1/auth', function(req, res) {
     var user_input_name = req.body.name;
     var user_input_pass = req.body.password;
@@ -292,10 +301,10 @@ router.post('/api/v1/auth', function(req, res) {
 
         // SQL Query > Select Data
         //var query = client.query('SELECT name, password FROM users;');
-        var query = client.query('SELECT users.user_id AS userID, users.name AS name, users.password AS password, (SELECT user_organization.organization_id FROM user_organization WHERE (users.user_id = user_organization.user_id)) AS organizationID, users.role AS role FROM users;');
+        var query = client.query('SELECT users.user_id AS user_id, users.name AS name, users.password AS password, (SELECT user_organization.organization_id FROM user_organization WHERE (users.user_id = user_organization.user_id)) AS organization_id, users.role AS role FROM users;');
         /*
         row:
-        userID, name, password, organizationID, role
+        user_id, name, password, organization_id, role
         */
 
         // Stream name_pass_list back one row at a time
@@ -325,8 +334,8 @@ router.post('/api/v1/auth', function(req, res) {
                     success: true,
                     message: 'Enjoy your token !',
                     token: token,
-                    userID: userInfo.userid,
-                    organizationID: userInfo.organizationid
+                    userID: userInfo.user_id,
+                    organizationID: userInfo.organization_id
                 });
             }
             else {
@@ -1284,34 +1293,43 @@ router.post('/api/v1/store', function (req, res) {
   metod: PUT
   image: multipart/form-data
   req.body: {
+    store_id: integer,
     name: string (optional),
     phone_number: string (optional),
     min_spending (optional)
   }
 */
 router.put('/api/v1/store/:store_id', function (req, res) {
-    console.log('Enter PUT store ...');
     
     var uiStoreID = req.params.store_id;
     var uiName = req.body.name;
     var uiPhoneNumber = req.body.phone_number;
     var uiMinSpending = req.body.min_spending;
     
+    console.log('name: ' + uiName);
+    
     var cols = [];
     var vals = [];
     
-    if (uiName) {
+    if (uiStoreID === undefined) {
+        return res.json({
+            success: false,
+            message: 'store_id is missing !'
+        });
+    }
+    
+    if (uiName !== undefined) {
         cols.push('name');
         vals.push(sq.SQLString(uiName));
     }
     
-    if (uiPhoneNumber) {
+    if (uiPhoneNumber !== undefined) {
         cols.push('phone_number');
         vals.push(sq.SQLString(uiPhoneNumber));
     }
     
-    if (uiMinSpending) {
-        cols.push('min_spendiing');
+    if (uiMinSpending !== undefined) {
+        cols.push('min_spending');
         vals.push(uiMinSpending);
     }
     
@@ -1319,30 +1337,48 @@ router.put('/api/v1/store/:store_id', function (req, res) {
     // todo: prevent illegal request field
     
     uploadImage(req, function (imagePath) {
-        console.log('imagePath: ' + imagePath);
+        //console.log('imagePath: ' + imagePath);
         pg.connect(connectionString, function(err, client, done) {
-            cols.push('image');
-            vals.push((imagePath) ? sq.SQLString(imagePath) : sq.SQLString(''));
-            var queryString = 'UPDATE stores SET {0} WHERE store_id = {1};'.format(sq.arrayToSQLUpdateString(cols, vals), uiStoreID);
-            //console.log(queryString);
-            //if (imagePath) console.log(imagePath);
-            var query = client.query(queryString);
-    
             if (err) {
+                res.status(status_code.CLI_ERR_BAD_REQ);
+                res.send(err);
+                /*
                 return res.json({
                     success: false,
                     message: err
                 });
+                */
             }
-    
-            // After all data is returned, close connection and return results
-            query.on('end', function() {
-                client.end();
-                return res.json({
-                    success: true,
-                    message: 'Update OK.'
+            
+            if (imagePath !== undefined) {
+                cols.push('image');
+                vals.push((imagePath) ? sq.SQLString(imagePath) : sq.SQLString(''));
+            }
+            
+            if (cols.length > 0) {
+                var queryString = 'UPDATE stores SET {0} WHERE store_id = {1};'.format(sq.arrayToSQLUpdateString(cols, vals), uiStoreID);
+                console.log(queryString);
+                //if (imagePath) console.log(imagePath);
+                var query = client.query(queryString);
+        
+                // After all data is returned, close connection and return results
+                query.on('end', function() {
+                    client.end();
+                    return res.json({
+                        success: true,
+                        message: 'Update OK.'
+                    });
                 });
-            });
+            } else {
+                res.status(status_code.CLI_ERR_BAD_REQ);
+                res.send('no giving field.');
+                /*
+                return res.json({
+                    success: false,
+                    message: "no giving field."
+                });
+                */
+            }
         });
     });
 });

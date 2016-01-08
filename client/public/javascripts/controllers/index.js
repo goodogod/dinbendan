@@ -322,6 +322,8 @@ angular.module('main')
     $scope.activePartyResult = {
         visible: true, // todo: 根據權限顯示
         modalVisible: false,
+        /* { product, price, users, note } */
+        orderResults: [],
         
         onShow: function() {
             if (!$scope.activeParty) {
@@ -331,9 +333,6 @@ angular.module('main')
             this.updateOrderResults(this.orderResults);
             this.modalVisible = true;
         },
-        
-        /* { product, price, users, note } */
-        orderResults: [],
         
         updateOrderResults: function (orderResults) {
             orderResults.length = 0;
@@ -381,6 +380,14 @@ angular.module('main')
                     alert('連線錯誤！');
                 });
             }
+        },
+        
+        getTotalPrice: function () {
+            var total = 0;
+            this.orderResults.forEach(function (summary) {
+                total = total + summary.price * summary.users.length;
+            });
+            return total;
         }
     };
 
@@ -673,4 +680,6 @@ angular.module('main')
       
       return filtered;
     };
-});
+})
+
+;
