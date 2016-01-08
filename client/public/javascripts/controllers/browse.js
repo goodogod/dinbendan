@@ -448,24 +448,31 @@ app
             this.formVisible = true;
         },
         onClickSubmit: function () {
-            $http({
-                url: '/api/v1/product/comment',
-                method: 'POST',
-                data: {
-                    product_id: $scope.selectProduct.product_id,
-                    comment_user_id: userID,
-                    text: this.text,
-                    stars: this.stars,
-                    image: '',
-                    token: token
-                }
-            })
-            .success(function (res) {
-                updateCommentsList();
-            })
-            .error(function (res) {
-                alert(JSON.stringify(res));
-            });
+            if (confirm('確定發表評論？')) {
+                var curNewComment = $scope.newComment;
+                $http({
+                    url: '/api/v1/product/comment',
+                    method: 'POST',
+                    data: {
+                        product_id: $scope.selectProduct.product_id,
+                        comment_user_id: userID,
+                        text: this.text,
+                        stars: this.stars,
+                        image: '',
+                        token: token
+                    }
+                })
+                .success(function (res) {
+                    updateCommentsList();
+                })
+                .error(function (res) {
+                    alert(JSON.stringify(res));
+                })
+                .finally(function () {
+                    curNewComment.text = '';
+                    curNewComment.stars = 3;
+                });
+            }
         },
         onClickCancel: function () {
             this.formVisible = false;
