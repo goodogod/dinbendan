@@ -123,13 +123,13 @@
 
                             <!-- 剩餘時間 -->
                             <div class="pull-right" ng-show="today.getTime() < activeParty.createDate.getTime()">
-                                Party 還沒到！
+                                時間還沒到！
                             </div>
                             <div class="pull-right" ng-show="activeParty.createDate.getTime() <= today.getTime() && today.getTime() <= activeParty.expiredDate.getTime()">
                                 <timer end-time="activeParty.expiredDate">還有 {{hours}} 時, {{minutes}} 分, {{seconds}} 秒 結束。</timer>
                             </div>
                             <div class="pull-right" ng-show="activeParty.expiredDate.getTime() < today.getTime()">
-                                Party 已過期！
+                                時間已過期！
                             </div>
 
                             <!-- 統計Modal -->
