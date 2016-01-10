@@ -16,7 +16,6 @@
 </head>
 
 <body>
-
     <!--
     View structures:
     * container
@@ -27,7 +26,10 @@
         <!-- navbar -->
         <div ng-include="'header'"></div>
 
-        <div class="main-view" ng-controller="mainController">
+        <div class="main-view" ng-controller="mainController" ng-show="ready">
+            
+            <div after-render="missionCompled"></div>
+            
             <!-- week-bar: 1 2 2 2 2 2 1 -->
             <div class="row">
                 <ul class="nav nav-tabs">
