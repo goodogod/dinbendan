@@ -23,6 +23,7 @@
     "node-uuid": "~1.4.3",
     "zlib": "~1.0.5",
     "serve-favicon": "~2.3.0",
-    "aws-sdk": "~2.2.26"
+    "aws-sdk": "~2.2.26",
+    "angular-loading-bar": "~0.8.0"
   }
 }

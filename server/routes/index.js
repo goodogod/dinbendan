@@ -120,6 +120,7 @@ function partyIsReady(partyID, thenEvent, errorEvent) {
         if (err) {
             if (errorEvent) {
                 errorEvent('connectionFailed', err);
+                return;
             }
         }
         var queryString = sq.getPartyInfo_F1.format(partyID);
@@ -871,6 +872,7 @@ router.put('/api/v1/party/:party_id/ready', function (req, res) {
 router.post('/api/v1/order', function (req, res) {
     //console.log('enter POST order');
     //console.log(JSON.stringify(req.body));
+
     var uiUserID = req.body.user_id;
     var uiPartyID = req.body.party_id;
     var uiStoreID = req.body.store_id;
@@ -878,8 +880,8 @@ router.post('/api/v1/order', function (req, res) {
     var uiPrice = req.body.price;
     var uiNote = req.body.note;
     
-    console.log('uiProduct: ' + uiProduct);
-    console.log('uiPrice: ' + uiPrice);
+    //console.log('uiProduct: ' + uiProduct);
+    //console.log('uiPrice: ' + uiPrice);
 
     //console.log(uiStoreID);
 
@@ -911,7 +913,7 @@ router.post('/api/v1/order', function (req, res) {
                 client.end();
     
                 // exist/new/incorrect
-                console.log(JSON.stringify(productsInStore));
+                //console.log(JSON.stringify(productsInStore));
                 var orderStatus = '';
                 for (var i = 0; i < productsInStore.length; i++) {
                     var product = productsInStore[i];
@@ -932,11 +934,18 @@ router.post('/api/v1/order', function (req, res) {
     
                 // treat order with orderStatus
                 var newOrderID = NaN;
-                console.log('orderStatus: ' + orderStatus);
+                //console.log('orderStatus: ' + orderStatus);
                 if (orderStatus == 'exist') {
                     var queryString = sq.insertOrder_F5.format(uiUserID, uiPartyID, uiProduct, uiPrice, uiNote);
     
                     pg.connect(connectionString, function(err, client, done) {
+                        if (err) {
+                            return res.json({
+                                success: false,
+                                message: err
+                            });
+                        }
+                        
                         var query = client.query(queryString);
     
                         query.on('row', function (row) {
