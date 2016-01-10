@@ -1,4 +1,8 @@
 /* global docCookies */
 'use strict';
 
-var app = angular.module('main', []);
+$(document).ready(function() {
+    $('.container').show();
+});
+
+var app = angular.module('main', ['angular-loading-bar']);

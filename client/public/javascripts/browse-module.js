@@ -1,4 +1,8 @@
 /* global docCookies */
 'use strict';
 
-var app = angular.module('main', ['angularFileUpload', 'datetime', 'xeditable']);
+$(document).ready(function() {
+    $('.container').show();
+});
+
+var app = angular.module('main', ['angularFileUpload', 'datetime', 'xeditable', 'angular-loading-bar']);

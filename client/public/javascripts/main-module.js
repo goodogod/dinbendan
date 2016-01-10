@@ -3,11 +3,8 @@
 
 
 // jQuery area
-//$(document).hide();
 $(document).ready(function() {
     $('.container').show();
-    //alert('ready !');
-    //$.material.init();
 });
 
 

@@ -1,4 +1,4 @@
-angular.module('main')
+app
 
 .controller('rechargeController', function ($scope, $http) {
     
