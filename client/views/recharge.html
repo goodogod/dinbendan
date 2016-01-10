@@ -38,7 +38,7 @@
                             <td>{{ user.name }}</td>
                             <td>{{ user.money | currency }}</td>
                             <td>
-                                <form class="form-inline">
+                                <form ng-show="userInfo.role >= 2" class="form-inline">
                                     <div class="form-group">
                                         <label class="sr-only" for="InputAmount">Amount (in dollars)</label>
                                         <div class="input-group">

@@ -126,8 +126,7 @@
 
                             <!-- 結案鈕 -->
                             <div class="clearing">
-                                <button type="button" class="btn btn-success pull-right" data-toggle="modal" data-target=".party-result-modal" ng-show="activeParty != null && !activeParty.ready && activePartyResult.visible"
-                                ng-click="activePartyResult.onShow()">結算</button>
+                                <button ng-click="activePartyResult.onShow()" ng-show="activeParty != null" type="button" class="btn btn-success pull-right" data-toggle="modal" data-target=".party-result-modal">結算</button>
                             </div>
 
                             <!-- 剩餘時間 -->
@@ -167,14 +166,17 @@
                                                         <th>備註</th>
                                                     </tr>
                                                 </thead>
-                                                <tr ng-repeat="orderResult in activePartyResult.orderResults">
+                                                <tr ng-repeat="orderResult in activePartyResult.orderResults | availableResultFilter">
                                                     <td>{{ orderResult.product }}</td>
                                                     <td>{{ orderResult.price | currency }}</td>
                                                     <td>{{ orderResult.users.length | emptyCountFilter }}</td>
+                                                    
                                                     <td>
                                                         <ul>
                                                             <li ng-repeat="user in orderResult.users">
-                                                                {{user.note | noteFilter}}
+                                                                <p ng-show="user.note !== ''">
+                                                                    {{ user.name }}：{{ user.note }}
+                                                                </p>
                                                             </li>
                                                         </ul>
                                                     </td>
@@ -182,6 +184,7 @@
                                                 <tr>
                                                     <td><b>Total</b></td>
                                                     <td><b>{{ activePartyResult.getTotalPrice() | currency }}</b></td>
+                                                    <td></td>
                                                     <td></td>
                                                 </tr>
                                                 <tbody>
@@ -192,7 +195,7 @@
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-default" data-dismiss="modal">關閉</button>
-                                            <button type="button" class="btn btn-success" ng-click="activePartyResult.onMakePartyReady()" ng-show="userInfo.role >= 2">扣款！</button>
+                                            <button type="button" class="btn btn-success" ng-click="activePartyResult.onMakePartyReady()" ng-show="!activeParty.ready && userInfo.role >= 2">扣款！</button>
                                         </div>
                                     </div>
                                     <!-- /.modal-content -->

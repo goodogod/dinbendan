@@ -684,6 +684,8 @@ app
         } // end of if (response.success)
     });
     
+    $scope.orderResultFilterValue = '';
+    
     console.log('可以到 https://github.com/goodogod/dinbendan 看 source code 哦 ^.<');
 })
 
@@ -719,6 +721,19 @@ app
       
       return filtered;
     };
+})
+
+.filter('availableResultFilter', function () {
+    return function (items) {
+        var filtered = [];
+        angular.forEach(items, function (item) {
+            if (item.users.length > 0) {
+                filtered.push(item);
+            }
+        });
+        
+        return filtered;
+    }
 })
 
 ;

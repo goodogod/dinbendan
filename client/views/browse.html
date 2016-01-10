@@ -41,7 +41,7 @@
                     <div class="stores-name-list panel-body table-container">
                         <table class="table table-hover">
                             <tbody>
-                                <tr ng-repeat="store in storesList" ng-class="{active: store.id == selectStore.id}">
+                                <tr ng-repeat="store in storesList | orderBy: 'name'" ng-class="{active: store.id == selectStore.id}">
                                     <td>
                                         <a href="" ng-click="clickStore($index)">{{store.name}}</a>
                                     </td>

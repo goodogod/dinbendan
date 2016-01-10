@@ -1,11 +1,14 @@
 app
 
-.controller('rechargeController', function ($scope, $http) {
+.controller('rechargeController', function ($scope, $http, userInfoService) {
     
     var info = getInfoFromCookies(docCookies);
     var token = info.token;
     var organizationID = info.organizationID;
     var userID = info.userID;
+    
+    userInfoService.update(userID, organizationID, token);
+    $scope.userInfo = userInfoService;
     
     // User name filter.
     $scope.userFilterValue = '';
