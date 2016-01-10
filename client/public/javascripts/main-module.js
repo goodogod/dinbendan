@@ -5,7 +5,7 @@
 // jQuery area
 //$(document).hide();
 $(document).ready(function() {
-    //$(document).show();
+    $('.container').show();
     //alert('ready !');
     //$.material.init();
 });
