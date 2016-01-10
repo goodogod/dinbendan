@@ -61,24 +61,7 @@ Store.prototype = {
 ======================================================*/
 app
 
-.directive('afterRender', ['$timeout', function ($timeout) {
-    var def = {
-        restrict: 'A',
-        terminal: true,
-        transclude: false,
-        link: function (scope, element, attrs) {
-            $timeout(scope.$eval(attrs.afterRender), 0);  //Calling a scoped method
-        }
-    };
-    return def;
-}])
-
 .controller('mainController', function ($scope, $http, userInfoService) {
-    
-    $scope.ready = false;
-    $scope.missionCompled = function () {
-        $scope.ready = true;
-    }
     
     /*
      * query string: d=yyyymmdd,p=id

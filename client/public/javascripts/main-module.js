@@ -3,7 +3,9 @@
 
 
 // jQuery area
+//$(document).hide();
 $(document).ready(function() {
+    //$(document).show();
     //alert('ready !');
     //$.material.init();
 });
