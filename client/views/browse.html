@@ -184,13 +184,13 @@
                                 <thead>
                                     <tr>
                                         <th>
-                                            <input type="text" class="col-lg-3" placeholder="商品篩選器 ...">
+                                            <input type="text" class="col-lg-3" placeholder="商品篩選 ..." ng-model="productFilterValue">
                                         </th>
                                         <th>售價</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr ng-repeat="product in productsList " ng-class="{active: product.product_id == selectProduct.product_id} ">
+                                    <tr ng-repeat="product in productsList | productFilter:productFilterValue" ng-class="{active: product.product_id == selectProduct.product_id} ">
                                         <td>
                                             <a href=" " ng-click="clickProduct($index) ">{{product.product_name}}</a>
                                         </td>

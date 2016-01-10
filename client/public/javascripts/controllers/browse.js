@@ -55,7 +55,7 @@ app
     var organizationID = info.organizationID;
     var userID = info.userID;
     
-    // todo: get role
+    // get role
     userInfoService.update(userID, organizationID, token);
     $scope.userInfo = userInfoService;
     
@@ -119,6 +119,7 @@ app
      * productsList: Array
      * products: [ { product_id, product_name, store_id, price }, { ... }, ... ]
      */
+    $scope.productFilterValue = '';
     $scope.productsList = [];
     $scope.selectProduct = null;
     
@@ -558,4 +559,18 @@ app
     var parser = datetime("yyyy-MM-dd hh:mm:ss");
     parser.setDate(new Date);
     parser.getText();
-});
+})
+
+.filter('productFilter', function () {
+    return function (items, wildcard) {
+      var filtered = [];
+      angular.forEach(items, function (item) {
+          if (item.product_name.match(wildcard)) {
+              filtered.push(item);
+          }
+      });
+      
+      return filtered;
+    };
+})
+;

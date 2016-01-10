@@ -61,9 +61,8 @@
                         <!-- span class="glyphicons glyphicons-edit"></span -->
                     </div>
                     <div>
-                        <span>{{activeParty.createDate | date: 'HH:mm:ss' }}</span>
-                        <span> ~ </span>
-                        <span>{{activeParty.expiredDate | date: 'HH:mm:ss' }}</span>
+                        <p>開始時間：{{activeParty.createDate | date: 'HH:mm:ss' }}</p>
+                        <p>結束時間：{{activeParty.expiredDate | date: 'HH:mm:ss' }}</p>
                     </div>
                     
                     <br/>
@@ -80,7 +79,12 @@
                     <div ng-show="selectOrderSummary != null" class="product-info">
                         <!-- p>Product Info</p -->
                         <!-- product name -->
-                        <p>學名：{{selectOrderSummary.product}}</p>
+                        <p>
+                            學名：{{selectOrderSummary.product}}
+                            <button ng-show="userInfo.role >=1 && selectOrderSummary.product_id < 0" ng-click="selectOrderSummary.addProduct()" type="button" class="btn btn-default" aria-label="Add product" title="目前還未建檔！點擊新增">
+                                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                            </button>
+                        </p>
 
                         <!-- product price -->
                         <p>售價：{{selectOrderSummary.price}}</p>
@@ -92,12 +96,13 @@
                                 <li ng-repeat="comment in selectProductComments">
                                     <div class="panel panel-default">
                                         <div class="panel-heading">
-                                            <a href="">{{comment.user_name}}</a>
-                                            
+                                            <span>
+                                                <a href="">{{comment.user_name}}</a>
+                                            </span>
+                                            <span> 分數：{{comment.stars}}</span>
                                         </div>
                                         
                                         <div class="panel-body">
-                                            <span>分數：{{comment.stars}}</p>
                                             <p>{{comment.text}}</p>
                                         </div>
                                     </div>
@@ -126,14 +131,19 @@
                             </div>
 
                             <!-- 剩餘時間 -->
-                            <div class="pull-right" ng-show="today.getTime() < activeParty.createDate.getTime()">
-                                時間還沒到！
+                            <div ng-show="activeParty.ready" class="pull-right">
+                                <p>便當團已結束。</p>
                             </div>
-                            <div class="pull-right" ng-show="activeParty.createDate.getTime() <= today.getTime() && today.getTime() <= activeParty.expiredDate.getTime()">
-                                <timer end-time="activeParty.expiredDate">還有 {{hours}} 時, {{minutes}} 分, {{seconds}} 秒 結束。</timer>
-                            </div>
-                            <div class="pull-right" ng-show="activeParty.expiredDate.getTime() < today.getTime()">
-                                時間已過期！
+                            <div ng-show="!activeParty.ready" class="pull-right">
+                                <div ng-show="today.getTime() < activeParty.createDate.getTime()">
+                                    <span>時間還沒到！</span>
+                                </div>
+                                <div ng-show="activeParty.createDate.getTime() <= today.getTime() && today.getTime() <= activeParty.expiredDate.getTime()">
+                                    <timer end-time="activeParty.expiredDate">還有 {{hours}} 時, {{minutes}} 分, {{seconds}} 秒 結束。</timer>
+                                </div>
+                                <div ng-show="activeParty.expiredDate.getTime() < today.getTime()">
+                                    <span>時間已過期！</span>
+                                </div>
                             </div>
 
                             <!-- 統計Modal -->

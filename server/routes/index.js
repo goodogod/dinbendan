@@ -119,7 +119,7 @@ function partyIsReady(partyID, thenEvent, errorEvent) {
     pg.connect(connectionString, function (err, client, done) {
         if (err) {
             if (errorEvent) {
-                errorEvent('connectionFailed', err);
+                errorEvent('connectionFailed', err, client, done);
                 return;
             }
         }
@@ -130,12 +130,13 @@ function partyIsReady(partyID, thenEvent, errorEvent) {
         });
         query.on('end', function () {
             if (result === undefined) {
-                errorEvent('partyNotExist', 'Party does not exit !');
+                errorEvent('partyNotExist', 'Party does not exit !', client, done);
             } else if (!result) {
-                thenEvent();
+                thenEvent(client, done);
             } else {
-                errorEvent('partyWasReady', 'Party was ready !');
+                errorEvent('partyWasReady', 'Party was ready !', client, done);
             }
+            //client.end();
         });
     });
 }
@@ -163,17 +164,8 @@ var recharge_path = path.join(__dirname, '..', '..', 'client', 'views', 'recharg
 
 // page navigation
 router.get('/', function(req, res, next) {
-    //console.log(req.query);
-    //res.send('haha!');
-    //console.log('GET root');
-    //console.log('router.get(/): ready to get token: ');
-
-    //var token = req.body.token || req.query.token || req.headers['x-access-token'];
-    //var token = req.session.token;
     var token = req.cookies ? req.cookies.token : undefined;
-
     if (token) {
-        //console.log('router.get(/): get token, ready to verify:');
         // verifies secret and checks exp
         jwt.verify(token, secretString, function(err, decoded) {
             if (err) {
@@ -185,9 +177,7 @@ router.get('/', function(req, res, next) {
         })
     }
     else {
-        //console.log('router.get(/): No token. response login page');
         res.redirect('/login');
-        //res.sendFile(login_path);
     }
 });
 
@@ -284,14 +274,12 @@ router.get('/login', function (req, res, next) {
 router.post('/api/v1/auth', function(req, res) {
     var user_input_name = req.body.name;
     var user_input_pass = req.body.password;
-    //console.log('router.post(/api/v1/auth): post auth ~');
-    //console.log('router.post(/api/v1/auth): ' + user_input_name);
-    //console.log('router.post(/api/v1/auth): ' + user_input_pass);
     var name_pass_list = [];
 
     // Get a Postgres client from the connection pool
     pg.connect(connectionString, function(err, client, done) {
         if (err) {
+            done();
             return res.json({
                 success: false,
                 message: 'DB connection failed.'
@@ -315,7 +303,7 @@ router.post('/api/v1/auth', function(req, res) {
 
         // After all data is returned, close connection and return name_pass_list
         query.on('end', function() {
-            client.end();
+            //client.end();
             //console.log(name_pass_list);
             var userInfo = undefined;
             for (var i = 0; i < name_pass_list.length; i++) {
@@ -331,6 +319,7 @@ router.post('/api/v1/auth', function(req, res) {
                     expiresInMinutes: 1440 // expires in 24 hours
                 });
 
+                done();
                 return res.json({
                     success: true,
                     message: 'Enjoy your token !',
@@ -341,12 +330,12 @@ router.post('/api/v1/auth', function(req, res) {
             }
             else {
                 // tell user he/she is wrong.
+                done();
                 return res.json({
                     succes: false,
                     message: 'Authentication failed.'
                 });
             }
-            //return res.json(name_pass_list);
         });
 
         // Handle Errors
@@ -423,7 +412,8 @@ router.get('/api/v1/users', function(req, res) {
 
         // After all data is returned, close connection and return results
         query.on('end', function() {
-            client.end();
+            //client.end();
+            done();
             return res.json({
                 success: true,
                 message: 'OK',
@@ -434,6 +424,7 @@ router.get('/api/v1/users', function(req, res) {
         // Handle Errors
         if(err) {
           console.log(err);
+          done();
           return res.json({
               success: false,
               message: 'Query error: ' + err
@@ -471,6 +462,7 @@ router.put('/api/v1/user/recharge', function (req, res) {
         //var result = 0.0;
         var query = client.query(queryString, function (err, results) {
             if (err) {
+                done();
                 return res.json({
                     success: false,
                     message: err
@@ -478,8 +470,8 @@ router.put('/api/v1/user/recharge', function (req, res) {
             }
             
             query.on('end', function() {
-                client.end();
-
+                //client.end();
+                done();
                 return res.json({
                     success: true,
                     message: 'Recharge success.',
@@ -531,17 +523,19 @@ router.post('/api/v1/party', function (req, res) {
         // output query
         //console.log(queryString);
 
-        var query = client.query(queryString, function (err, results) {
+        client.query(queryString, function (err, results) {
             if (err) {
+                done();
                 return res.json({
                     success: false,
                     message: err
                 });
             }
 
-            client.end();
+            //client.end();
 
             // response
+            done();
             return res.json({
                 success: true,
                 partyID: results.rows[0].party_id
@@ -620,6 +614,7 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
         var query = client.query(queryString);
 
         if (err) {
+            done();
             return res.json({
                 success: false,
                 message: err
@@ -632,8 +627,9 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
 
         // After all data is returned, close connection and return results
         query.on('end', function() {
-            client.end();
+            //client.end();
             //console.log(results);
+            done();
             return res.json({
                 success: true,
                 parties: results
@@ -672,6 +668,7 @@ router.get('/api/v1/stores', function (req, res) {
         var query = client.query(queryString);
 
         if (err) {
+            done();
             return res.json({
                 success: false,
                 message: err
@@ -684,8 +681,9 @@ router.get('/api/v1/stores', function (req, res) {
 
         // After all data is returned, close connection and return results
         query.on('end', function() {
-            client.end();
+            //client.end();
             //console.log(results);
+            done();
             return res.json({
                 success: true,
                 message: '',
@@ -720,6 +718,7 @@ router.get('/api/v1/party/:party_id', function (req, res) {
         var query = client.query(queryString);
 
         if (err) {
+            done();
             return res.json({
                 success: false,
                 message: err
@@ -738,16 +737,18 @@ router.get('/api/v1/party/:party_id', function (req, res) {
         });
 
         query.on('end', function() {
-            client.end();
+            //client.end();
             if (results.length == 1) {
-                res.json({
+                done();
+                return res.json({
                     success: true,
                     message: 'Get OK.',
                     party: results[0]
                 });
             }
             else {
-                res.json({
+                done();
+                return res.json({
                     success: false,
                     message: 'Party not found: ' + uiPartyID
                 });
@@ -780,6 +781,7 @@ router.put('/api/v1/party/:party_id/ready', function (req, res) {
     
     pg.connect(connectionString, function(err, client, done) {
         if (err) {
+            done();
             return res.json({
                 success: false,
                 message: err
@@ -796,7 +798,8 @@ router.put('/api/v1/party/:party_id/ready', function (req, res) {
         
         query.on('end', function() {
             if (!partyInfo) {
-                client.end();
+                //client.end();
+                done();
                 return res.json({
                     success: false,
                     message: 'Party does not exist.'
@@ -804,7 +807,8 @@ router.put('/api/v1/party/:party_id/ready', function (req, res) {
             }
             
             if (partyInfo.ready) {
-                client.end();
+                //client.end();
+                done();
                 return res.json({
                     success: false,
                     message: 'Party has been ready.'
@@ -817,7 +821,8 @@ router.put('/api/v1/party/:party_id/ready', function (req, res) {
                 var query = client.query(queryString);
                 
                 query.on('end', function() {
-                    client.end();
+                    //client.end();
+                    done();
                     return res.json({
                         success: true,
                         message: 'Set party ready.',
@@ -880,40 +885,27 @@ router.post('/api/v1/order', function (req, res) {
     var uiPrice = req.body.price;
     var uiNote = req.body.note;
     
-    //console.log('uiProduct: ' + uiProduct);
-    //console.log('uiPrice: ' + uiPrice);
-
-    //console.log(uiStoreID);
-
     // todo: check price validation
 
     // check party ready
-    partyIsReady(uiPartyID, function partyExists () {
+    partyIsReady(uiPartyID, function partyExists (client, done) {
         // [ { product_id: integer, product_name: string, price: integer }, ... ]
+        
         var productsInStore = [];
-        pg.connect(connectionString, function(err, client, done) {
-            if (err) {
-                return res.json({
-                    success: false,
-                    message: err
-                });
-            }
             
-            var queryString = sq.getProductsListByStoreID_F1.format(uiStoreID);
-            var query = client.query(queryString);
-            query.on('row', function(row) {
-                productsInStore.push({
-                    product_id: parseInt(row.product_id),
-                    product_name: row.product_name,
-                    price: parseInt(row.price)
-                });
+        var queryString = sq.getProductsListByStoreID_F1.format(uiStoreID);
+        var query = client.query(queryString);
+        query.on('row', function(row) {
+            productsInStore.push({
+                product_id: parseInt(row.product_id),
+                product_name: row.product_name,
+                price: parseInt(row.price)
             });
-    
-            query.on('end', function() {
-                client.end();
-    
-                // exist/new/incorrect
-                //console.log(JSON.stringify(productsInStore));
+        });
+
+        query.on('end', function() {
+            // exist/new/incorrect
+            try {
                 var orderStatus = '';
                 for (var i = 0; i < productsInStore.length; i++) {
                     var product = productsInStore[i];
@@ -921,8 +913,7 @@ router.post('/api/v1/order', function (req, res) {
                         if (product.price === uiPrice) {
                             orderStatus = 'exist';
                             break;
-                        }
-                        else {
+                        } else {
                             orderStatus = 'incorrect';
                             break;
                         }
@@ -931,46 +922,28 @@ router.post('/api/v1/order', function (req, res) {
                 if (orderStatus == '') {
                     orderStatus = 'new';
                 }
-    
+
                 // treat order with orderStatus
                 var newOrderID = NaN;
-                //console.log('orderStatus: ' + orderStatus);
-                if (orderStatus == 'exist') {
+                console.log('orderStatus: ' + orderStatus);
+                if (orderStatus == 'exist' || orderStatus == 'new') {
                     var queryString = sq.insertOrder_F5.format(uiUserID, uiPartyID, uiProduct, uiPrice, uiNote);
-    
-                    pg.connect(connectionString, function(err, client, done) {
-                        if (err) {
-                            return res.json({
-                                success: false,
-                                message: err
-                            });
-                        }
+
                         
-                        var query = client.query(queryString);
-    
-                        query.on('row', function (row) {
-                            newOrderID = row.order_id;
-                        });
-    
-                        query.on('end', function() {
-                            client.end();
-    
-                            return res.json({
-                                success: true,
-                                message: 'Create order OK !',
-                                order_id: newOrderID
-                            });
+                    var query = client.query(queryString);
+
+                    query.on('row', function (row) {
+                        newOrderID = row.order_id;
+                    });
+
+                    query.on('end', function() {
+                        return res.json({
+                            success: true,
+                            message: 'Create order OK !',
+                            order_id: newOrderID
                         });
                     });
-    
-                }
-                else if (orderStatus == 'new') {
-                    
-                    return res.json({
-                        success: true,
-                        message: 'Create order OK !',
-                        order_id: newOrderID
-                    });
+
                 }
                 else if (orderStatus == 'incorrect') {
                     return res.json({
@@ -984,10 +957,13 @@ router.post('/api/v1/order', function (req, res) {
                         message: 'Something wrong during insert order !'
                     });
                 }
-            });
+            } finally {
+                done();
+            }
         });
     }, 
-    function error (excp, msg) {
+    function error (excp, msg, client, done) {
+        done();
         return res.json({
             success: false,
             message: msg,
@@ -1041,6 +1017,7 @@ router.get('/api/v1/party/:party_id/orders', function (req, res) {
         var query = client.query(queryString);
 
         if (err) {
+            done();
             return res.json({
                 success: false,
                 message: err
@@ -1053,7 +1030,8 @@ router.get('/api/v1/party/:party_id/orders', function (req, res) {
 
         // After all data is returned, close connection and return results
         query.on('end', function() {
-            client.end();
+            //client.end();
+            done();
             return res.json({
                 success: true,
                 message: '',
@@ -1086,6 +1064,7 @@ router.delete('/api/v1/order/:order_id', function (req, res) {
     pg.connect(connectionString, function (err, client, done) {
         // check party ready
         if (err) {
+            done();
             return res.json({
                 success: false,
                 message: err,
@@ -1093,48 +1072,28 @@ router.delete('/api/v1/order/:order_id', function (req, res) {
             });
         }
         
-        var partyIsReady = undefined;
+        var partyReady = undefined;
         var queryString = sq.getPartyByOrderID_F1.format(uiOrderID);
-        var query = client.query(queryString);
-        query.on('row', function (row) {
-            partyIsReady = row.ready;
-            console.log(JSON.stringify(row));
-        });
-        
-        query.on('end', function () {
-            console.log('partyIsReady: ' + partyIsReady);
-            if (!partyIsReady) {
-                pg.connect(connectionString, function (err, client, done) {
-                    if (err) {
-                        return res.json({
-                            success: false,
-                            message: err,
-                            exception: 'connectionFailed'
-                        });
-                    }
-                    
-                    var queryString = sq.deleteRow_F3.format('orders', 'order_id', uiOrderID);
-                    var query = client.query(queryString);
-                    //console.log('after delete query');
-                    query.on('end', function() {
-                        client.end();
-                        return res.json({
+        client.query(queryString, function (err, result) {
+            partyReady = result.rows[0].ready;
+            if (!partyReady) {
+                var queryString = sq.deleteRow_F3.format('orders', 'order_id', uiOrderID);
+                client.query(queryString, function (err, result) {
+                    done();
+                    return res.json({
                             success: true,
                             message: ''
                         });
-                    });
                 });
-            }
-            else {
+            } else {
+                done();
                 return res.json({
                     success: false,
                     message: 'Party was ready !',
                     exception: 'partyWasReady'
                 });
             }
-        })
-        
-        
+        });
     });
 });
 
@@ -1165,6 +1124,7 @@ router.get('/api/v1/store/:store_id', function (req, res) {
         var query = client.query(queryString);
 
         if (err) {
+            done();
             return res.json({
                 success: false,
                 message: err
@@ -1183,9 +1143,10 @@ router.get('/api/v1/store/:store_id', function (req, res) {
 
         // After all data is returned, close connection and return results
         query.on('end', function() {
-            client.end();
+            //client.end();
             //console.log(results);
             if (results.length == 1) {
+                done();
                 return res.json({
                     success: true,
                     message: '',
@@ -1193,6 +1154,7 @@ router.get('/api/v1/store/:store_id', function (req, res) {
                 });
             }
             else {
+                done();
                 return res.json({
                     success: false,
                     message: 'Store not found: ' + uiStoreID
@@ -1274,6 +1236,7 @@ router.post('/api/v1/store', function (req, res) {
             var query = client.query(queryString);
     
             if (err) {
+                done();
                 return res.json({
                     success: false,
                     message: err
@@ -1285,7 +1248,8 @@ router.post('/api/v1/store', function (req, res) {
             });
     
             query.on('end', function() {
-                client.end();
+                //client.end();
+                done();
                 return res.json({
                     success: true,
                     message: 'Update OK.',
@@ -1351,6 +1315,8 @@ router.put('/api/v1/store/:store_id', function (req, res) {
             if (err) {
                 res.status(status_code.CLI_ERR_BAD_REQ);
                 res.send(err);
+                done();
+                return;
                 /*
                 return res.json({
                     success: false,
@@ -1372,7 +1338,8 @@ router.put('/api/v1/store/:store_id', function (req, res) {
         
                 // After all data is returned, close connection and return results
                 query.on('end', function() {
-                    client.end();
+                    //client.end();
+                    done();
                     return res.json({
                         success: true,
                         message: 'Update OK.'
@@ -1381,6 +1348,8 @@ router.put('/api/v1/store/:store_id', function (req, res) {
             } else {
                 res.status(status_code.CLI_ERR_BAD_REQ);
                 res.send('no giving field.');
+                done();
+                return;
                 /*
                 return res.json({
                     success: false,
@@ -1431,6 +1400,7 @@ router.get('/api/v1/store/:store_id/products', function (req, res) {
         var query = client.query(queryString);
 
         if (err) {
+            done();
             return res.json({
                 success: false,
                 message: err
@@ -1443,8 +1413,9 @@ router.get('/api/v1/store/:store_id/products', function (req, res) {
 
         // After all data is returned, close connection and return results
         query.on('end', function() {
-            client.end();
+            //client.end();
             //console.log(results);
+            done();
             return res.json({
                 success: true,
                 message: '',
@@ -1488,8 +1459,9 @@ router.get('/api/v1/product/:product_id', function (req, res) {
 
         // After all data is returned, close connection and return results
         query.on('end', function() {
-            client.end();
+            //client.end();
             if (results.length == 1) {
+                done();
                 return res.json({
                     success: true,
                     message: '',
@@ -1501,6 +1473,7 @@ router.get('/api/v1/product/:product_id', function (req, res) {
                 });
             }
             else {
+                done();
                 return res.json({
                     success: false,
                     message: 'Product not found: ' + uiProductID
@@ -1599,6 +1572,7 @@ router.post('/api/v1/product/comment', function (req, res) {
             var query = client.query(queryString);
     
             if (err) {
+                done();
                 return res.json({
                     success: false,
                     message: err
@@ -1611,8 +1585,9 @@ router.post('/api/v1/product/comment', function (req, res) {
     
             // After all data is returned, close connection and return results
             query.on('end', function() {
-                client.end();
+                //client.end();
                 if (results.length == 1) {
+                    done();
                     return res.json({
                         success: true,
                         message: '',
@@ -1620,6 +1595,7 @@ router.post('/api/v1/product/comment', function (req, res) {
                     });
                 }
                 else {
+                    done();
                     return res.json({
                         success: false,
                         message: 'Comment insert failed.'
@@ -1667,6 +1643,7 @@ router.get('/api/v1/product/:product_id/comments', function (req, res) {
     var results = [];
     pg.connect(connectionString, function(err, client, done) {
         if (err) {
+            done();
             return res.json({
                 success: false,
                 message: err
@@ -1685,8 +1662,9 @@ router.get('/api/v1/product/:product_id/comments', function (req, res) {
 
         // After all data is returned, close connection and return results
         query.on('end', function() {
-            client.end();
+            //client.end();
             //console.log(results);
+            done();
             return res.json({
                 success: true,
                 message: '',
@@ -1762,6 +1740,7 @@ router.post('/api/v1/product', function (req, res) {
     var results = [];
     pg.connect(connectionString, function (err, client, done) {
         if (err) {
+            done();
             return res.json({
                 success: false,
                 message: err
@@ -1781,8 +1760,9 @@ router.post('/api/v1/product', function (req, res) {
 
         // After all data is returned, close connection and return results
         query.on('end', function() {
-            client.end();
+            //client.end();
             if (results.length == 1) {
+                done();
                 return res.json({
                     success: true,
                     message: '',
@@ -1790,6 +1770,7 @@ router.post('/api/v1/product', function (req, res) {
                 });
             }
             else {
+                done();
                 return res.json({
                     success: false,
                     message: 'Result failed.'

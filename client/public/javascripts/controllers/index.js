@@ -6,6 +6,7 @@ function Party(name, party_id, creator_id, store_id, creator, store,
     this.party_id = party_id;
     this.creator_id = creator_id;
     this.store_id = store_id;
+    this.store = store;
     this.creator = creator;
     this.create_date = create_date;
     this.expired_date = expired_date;
@@ -18,7 +19,7 @@ function Party(name, party_id, creator_id, store_id, creator, store,
 Party.prototype = {
     constructor: Party,
     available: function (today) {
-        return (this.createDate.getTime() <= today.getTime() && today.getTime() <= this.expiredDate.getTime());
+        return (!this.ready && this.createDate.getTime() <= today.getTime() && today.getTime() <= this.expiredDate.getTime());
     }
 };
 
@@ -76,6 +77,9 @@ app
     var token = info.token;
     var organizationID = info.organizationID;
     var userID = info.userID;
+    
+    userInfoService.update(userID, organizationID, token);
+    $scope.userInfo = userInfoService;
 
     // display today
     // 0 ~ 6
@@ -393,6 +397,7 @@ app
 
     /*******************************
     format: {
+          product_id, // < 0 if product is new.
           product,
           price,
           users: [
@@ -489,6 +494,40 @@ app
             return;
         }
         $scope.selectOrderSummary = orderSummary;
+        $scope.selectOrderSummary.product_id = -1;
+        $scope.selectOrderSummary.addProduct = function () {
+            // POST new product to current store.
+            var newProduct = $scope.selectOrderSummary.product;
+            var newProductPrice = $scope.selectOrderSummary.price;
+            var storeName = $scope.activeParty.store;
+            var storeID = $scope.activeParty.store_id;
+            if (confirm('新增 {0} (售價：{1}) 到 {2} ？'.format(newProduct, newProductPrice, storeName))) {
+                $http({
+                    url: '/api/v1/product',
+                    method: 'POST',
+                    data: {
+                        store_id: storeID,
+                        name: newProduct,
+                        price: newProductPrice,
+                        token: token
+                    }
+                })
+                .success(function (res) {
+                    if (res.success) {
+                        window.location.reload();
+                    }
+                    else {
+                        console.log(res.message);
+                        alert('新增商品出錯！');
+                    }
+                })
+                .error(function (res) {
+                    console.log('POST product failed.');
+                    console.log(JSON.stringify(res));
+                    alert('新增商品出錯 ...');
+                });
+            }
+        }
 
         // todo: GET products list
         //$scope.updateProductsList($scope.activeParty.store_id, $scope.productsList, token, organizationID);
@@ -535,13 +574,22 @@ app
                         }
                     });
                     
+                    // 保留給新建商品
+                    $scope.selectOrderSummary.product_id = selProductInStore.product_id;
+                    
                     // Fill 
                     $scope.inputOrder.productName = selProductInStore.product_name;
                     $scope.inputOrder.price = selProductInStore.price;
                     $scope.inputOrder.note = '';
                 }
                 else {
-                    $scope.inputOrder.initialize();
+                    // probably new product
+                    // 保留給新建商品
+                    $scope.selectOrderSummary.product_id = -1;
+                    
+                    $scope.inputOrder.productName = $scope.selectOrderSummary.product;
+                    $scope.inputOrder.price = $scope.selectOrderSummary.price;
+                    //$scope.inputOrder.initialize();
                 }
             }
         });
@@ -635,15 +683,6 @@ app
 
         } // end of if (response.success)
     });
-
-
-    $scope.layoutDone = function() {
-        //alert('done !');
-        $.material.init();
-
-        
-        
-    }
     
     console.log('可以到 https://github.com/goodogod/dinbendan 看 source code 哦 ^.<');
 })
