@@ -4,9 +4,9 @@
  * Resource stirngs.
  */
 
-const PARTY = '便當團';
-const STORE = '店家';
-const PRODUCT = '商品';
+var PARTY = '便當團';
+var STORE = '店家';
+var PRODUCT = '商品';
 
 /*
  *  Return: { token: string, organizationID: string, userID: string }

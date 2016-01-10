@@ -161,10 +161,10 @@ app
         getProductsList($http, token, $scope.selectStore.id, $scope.productsList);
     }
     /* Event: click store component. */
-    $scope.clickStore = function (storeIndex) {
+    $scope.clickStore = function (store) {
         //alert('Enter clickStore');
         if ($scope.selectStore 
-        && $scope.selectStore.id == $scope.storesList[storeIndex].id) {
+        && $scope.selectStore.id == store.id) {
             //clearStores();
             setSelectStore(null);
             //$scope.selectStore = null;
@@ -173,7 +173,7 @@ app
         }
         else {
             //updateStoresList();
-            setSelectStore($scope.storesList[storeIndex]);
+            setSelectStore(store);
             //$scope.selectStore = $scope.storesList[storeIndex];
             updateProductsList();
         }

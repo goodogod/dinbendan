@@ -43,7 +43,7 @@
                             <tbody>
                                 <tr ng-repeat="store in storesList | orderBy: 'name'" ng-class="{active: store.id == selectStore.id}">
                                     <td>
-                                        <a href="" ng-click="clickStore($index)">{{store.name}}</a>
+                                        <a href="" ng-click="clickStore(store)">{{store.name}}</a>
                                     </td>
                                 </tr>
                             </tbody>
