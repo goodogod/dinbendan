@@ -19,7 +19,12 @@ function Party(name, party_id, creator_id, store_id, creator, store,
 Party.prototype = {
     constructor: Party,
     available: function (today) {
-        return (!this.ready && this.createDate.getTime() <= today.getTime() && today.getTime() <= this.expiredDate.getTime());
+        /*
+          Available condition:
+          * party not ready. 
+        */
+        //return (!this.ready && this.createDate.getTime() <= today.getTime() && today.getTime() <= this.expiredDate.getTime());
+        return (!this.ready);
     }
 };
 
@@ -373,7 +378,7 @@ app
                 .success(function (res) {
                     if (res.success) {
                         alert('扣款成功！');
-                        window.location = '/';
+                        window.location.reload();
                     } else {
                         console.log(res.message);
                         alert('扣款出現錯誤！');
@@ -443,7 +448,24 @@ app
         price: 0,
         note: '',
         submitOrder: function () {
-            if (confirm('確定訂購 ' + this.productName + '(金額: ' + this.price + ' 元) ?')) {
+            var validPrice = 0.0;
+            try {
+                validPrice = parseFloat(this.price);
+                if (validPrice <= 0.0) {
+                    alert('金額不能小於 0 元！');
+                    return;
+                } else if (validPrice > 10000) {
+                    alert('金額不能超過 10000 元！');
+                    return;
+                } else if (isNaN(validPrice)) {
+                    alert('輸入的金額有誤！');
+                    return;
+                }
+            } catch (error) {
+                alert('輸入的金額有誤！');
+                return;
+            }
+            if (confirm('確定訂購 ' + this.productName + '(金額: ' + validPrice + ' 元) ?')) {
                 var req = {
                     method: 'POST',
                     url: '/api/v1/order',
@@ -452,7 +474,7 @@ app
                         party_id: $scope.activeParty.party_id,
                         store_id: $scope.activeParty.store_id,
                         product:  this.productName,
-                        price:    parseInt(this.price),
+                        price:    validPrice,
                         note:     this.note
                     },
                     params: {
@@ -475,6 +497,10 @@ app
                             alert('請求的 Party 不存在！');
                         } else if (response.exception === 'partyWasReady') {
                             alert('Party 已結束！');
+                        } else if (response.exception === 'priceIncorrect') {
+                            alert('商品金額與資料不符！');
+                        } else {
+                            alert(response.message);
                         }
                     }
                 });

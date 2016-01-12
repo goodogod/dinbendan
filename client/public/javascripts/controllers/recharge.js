@@ -33,10 +33,9 @@ app
         if (confirm('確定幫 ' + curUser.name + ' 儲值 ' + curUser.inputAmount + ' 元 ?')) {
             // recharge request
             $http({
-                url: 'api/v1/user/recharge',
+                url: 'api/v1/user/' + curUser.id + '/recharge',
                 method: 'PUT',
                 data: {
-                    user_id: curUser.id,
                     amount: curUser.inputAmount,
                     token: token
                 }

@@ -56,7 +56,7 @@ module.exports.insertStore_F2 =
  * Return: name, phone_number, create_date, image, min_spending
  */
 module.exports.getStoreInfo_F1 = 
-    'SELECT name, phone_number, TO_CHAR(create_date, \'yyyy-mm-dd hh24:mm:ss\') AS create_date, image, min_spending FROM stores WHERE store_id = {0};';
+    'SELECT name, phone_number, TO_CHAR(create_date, \'yyyy-mm-dd hh24:mi:ss\') AS create_date, image, min_spending FROM stores WHERE store_id = {0};';
 
 /*
  * Get party info.
@@ -65,7 +65,7 @@ module.exports.getStoreInfo_F1 =
  * Return: name, organization_id, creator_id, store_id, create_date, expired_date, ready
  */
 module.exports.getPartyInfo_F1 = 
-    'SELECT name, organization_id, creator_id, store_id, TO_CHAR(create_date, \'yyyy-mm-dd hh24:mm:ss\') AS create_date, TO_CHAR(expired_date, \'yyyy-mm-dd hh24:mm:ss\') AS expired_date, ready FROM parties WHERE party_id = {0};';
+    'SELECT name, organization_id, creator_id, store_id, TO_CHAR(create_date, \'yyyy-mm-dd hh24:mi:ss\') AS create_date, TO_CHAR(expired_date, \'yyyy-mm-dd hh24:mi:ss\') AS expired_date, ready FROM parties WHERE party_id = {0};';
 
 /*
  * Get product comments.

@@ -434,6 +434,84 @@ router.get('/api/v1/users', function(req, res) {
 });
 
 /*
+ * path: /api/v1/user/:user_id/password
+ * role: 1
+ * method: PUT
+ * body: {
+ *   old_password: string
+ *   new_password: string
+ * }
+ * 
+ * response: {
+ *   success: boolean,
+ *   message: string
+ * }
+ */
+/*
+var PASSWORD_LEN = 5;
+router.put('/api/v1/user/:user_id/password', function (req, res) {
+    var uiUserID = req.params.user_id;
+    var uiOldPassword = req.body.old_password;
+    var uiNewPassword = req.body.new_password;
+    
+    if (uiUserID === undefined) {
+        return res.json({
+            success: false,
+            message: 'user_id is missing !'
+        });
+    }
+    
+    if (uiNewPassword.length <= PASSWORD_LEN) {
+        return res.json({
+            success: false,
+            message: 'New password is too short ! At least: ' + PASSWORD_LEN
+        })
+    }
+    
+    pg.connect(connectionString, function (err, client, done) {
+        var queryString = sq.getPasswordsListByUserID_F1.format(uiUserID);
+        client.query(queryString, function (err, result) {
+            if (err) {
+                done();
+                return res.json({
+                    success: false,
+                    message: err
+                });
+            }
+            
+            if (result.rows.length > 0) {
+                var orgPassword = result.rows[0].password
+                if (orgPassword === uiOldPassword) {
+                    var queryString = sq.updatePasswordByUserID_F2.format(uiUserID, uiNewPassword);
+                    client.query(queryString, function (err, result) {
+                        if (err) {
+                            done();
+                            return res.json({
+                                success: false,
+                                message: err
+                            });
+                        }
+                        
+                        done();
+                        return res.json({
+                            success: true,
+                            message: 'Change password OK !'
+                        })
+                    });
+                } else {
+                    done();
+                    return res.json({
+                        success: false,
+                        message: 'Old password is wrong !'
+                    });
+                }
+            }
+        });
+    });
+});
+*/
+
+/*
  * path: /api/v1/user/recharge
  * role: acountant/admin
  * method: PUT
@@ -450,12 +528,20 @@ router.get('/api/v1/users', function(req, res) {
  *     paramInvalid
  * }
  */
-router.put('/api/v1/user/recharge', function (req, res) {
+router.put('/api/v1/user/:user_id/recharge', function (req, res) {
     // todo: check role
     
     // todo: check parameters
-    var uiUserID = req.body.user_id;
+    var uiUserID = req.params.user_id;
     var uiAmount = req.body.amount;
+    
+    if (uiUserID === undefined) {
+        return res.json({
+            success: false,
+            message: 'user_id is missing !'
+        });
+    }
+    
     pg.connect(connectionString, function(err, client, done) {
         var queryString = sq.updateUserMoney_F2.format(uiUserID, uiAmount);
         console.log(queryString);
@@ -594,8 +680,8 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
             ' parties.store_id AS store_id,'+
             ' users.name AS creator,'+
             ' stores.name AS store,'+
-            ' TO_CHAR(parties.create_date, \'yyyy-mm-dd hh24:mm:ss\') AS create_date,'+
-            ' TO_CHAR(parties.expired_date, \'yyyy-mm-dd hh24:mm:ss\') AS expired_date,'+
+            ' TO_CHAR(parties.create_date, \'yyyy-mm-dd hh24:mi:ss\') AS create_date,'+
+            ' TO_CHAR(parties.expired_date, \'yyyy-mm-dd hh24:mi:ss\') AS expired_date,'+
             ' parties.ready AS ready,'+
             ' (SELECT COUNT(*) FROM orders WHERE parties.party_id = orders.party_id) AS order_count'+
             ' FROM parties, users, stores'+
@@ -872,6 +958,7 @@ router.put('/api/v1/party/:party_id/ready', function (req, res) {
         connectionFailed
         partyNotExist
         partyWasReady
+        priceIncorrect
   }
 */
 router.post('/api/v1/order', function (req, res) {
@@ -948,7 +1035,8 @@ router.post('/api/v1/order', function (req, res) {
                 else if (orderStatus == 'incorrect') {
                     return res.json({
                         success: false,
-                        message: 'Product price is incorrect !'
+                        message: 'Product price is incorrect !',
+                        exception: 'priceIncorrect'
                     });
                 }
                 else {
