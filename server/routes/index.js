@@ -403,7 +403,7 @@ router.get('/api/v1/users', function(req, res) {
     pg.connect(connectionString, function(err, client, done) {
 
         // SQL Query > Select Data
-        var query = client.query('SELECT users.user_id AS user_id, users.name As user_name, user_organization.organization_id AS organization_id, organizations.name As organization, users.create_date AS create_date, users.role AS role, users.money AS money FROM user_organization, users, organizations WHERE (user_organization.user_id = users.user_id AND user_organization.organization_id = organizations.organization_id) ORDER BY user ASC;');
+        var query = client.query('SELECT users.user_id AS user_id, users.name As user_name, user_organization.organization_id AS organization_id, organizations.name As organization, users.create_date AS create_date, users.role AS role, users.money AS money FROM user_organization, users, organizations WHERE (user_organization.user_id = users.user_id AND user_organization.organization_id = organizations.organization_id) ORDER BY user_name ASC;');
 
         // Stream results back one row at a time
         query.on('row', function(row) {

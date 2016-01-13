@@ -36,29 +36,23 @@
                 comment-creation   fixed bottom
         -->
             <div class="row">
-                <div class="stores-list col-md-3 panel panel-default main-layout">
-                    <div class="panel-heading">店家列表</div>
-                    <div class="stores-name-list panel-body table-container">
-                        <table class="table table-hover">
-                            <tbody>
-                                <tr ng-repeat="store in storesList | orderBy: 'name'" ng-class="{active: store.id == selectStore.id}">
-                                    <td>
-                                        <a href="" ng-click="clickStore(store)">{{store.name}}</a>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Role: Manager -->
-                    <div class="store-creation" ng-show="userInfo.role >= 1">
-                        <div class="ready-to-create" ng-show="!storeCreationFormVisible">
+                <div class="stores-list col-md-3 panel panel-default box-shadow--8dp">
+                    <h4>
+                        店家列表
+                        <button ng-show="userInfo.role >=1 && !storeCreationFormVisible" ng-click="onClickStoreCreationButton()" type="button" class="btn btn-default" aria-label="Add store" title="新增店家 ...">
+                            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                        </button>
+                    </h4>
+                    
+                    <div class="store-creation panel panel-default" ng-show="userInfo.role >= 1">
+                        <!-- div class="ready-to-create" ng-show="!storeCreationFormVisible">
                             <button class="btn btn-default btn-block" ng-click="onClickStoreCreationButton()">
                                 新增店家
                             </button>
-                        </div>
+                        </div -->
 
-                        <div class="store-creation-form" ng-show="storeCreationFormVisible">
+                        <div class="store-creation-form panel-body" ng-show="storeCreationFormVisible">
+                            <!-- h4>建立店家：</h4 -->
                             <form novalidate>
                                 <div class="form-group">
                                     <label>店家名稱</label>
@@ -68,20 +62,61 @@
                                     <label>滿多少外送</label>
                                     <input type="text" class="form-control" ng-model="newStore.min_spending" required/>
                                     <br/>
-                                    <button type="submit " class="btn btn-success pull-right " ng-click="onSubmitNewStore(newStore) ">添加</button>
+                                    <button type="submit " class="btn btn-success pull-right " ng-click="onSubmitNewStore(newStore)" ng-disabled="newStore.name == ''">添加</button>
                                     <button type="button " class="btn btn-default pull-right " ng-click="onClickNewStoreCancel() ">取消</button>
                                 </div>
                             </form>
-
                         </div>
+                    </div>
+                    
+                    <div class="stores-name-list">
+                         
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        <input ng-model="storeFilterValue" type="text" placeholder="店家搜尋 ..."/>
+                                    </th>       
+                                </tr>
+                            <thead>
+                            <tbody>
+                                <tr ng-repeat="store in storesList | orderBy: 'name' | storeFilter:storeFilterValue" ng-class="{active: store.id == selectStore.id}">
+                                    <td>
+                                        <a href="" ng-click="clickStore(store)">{{store.name}}</a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
-                <div class="store-view col-md-3 panel panel-default main-layout " ng-show="selectStore != null">
-                    <div class="panel-heading">
+                <div class="store-view col-md-3 panel panel-default box-shadow--8dp" ng-show="selectStore != null">
+                    <h4>
                         店家資訊
+                        <button ng-show="partyCreationVisible && (userInfo.role >= 1) && !partyCreationFormVisible" ng-click="onClickPartyCreationButton()" type="button" class="btn btn-default" aria-label="Add store" title="新增便當團 ...">
+                            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                        </button>
+                    </h4>
+                    
+                    <div class="party-creation-form panel panel-default" ng-show="partyCreationFormVisible ">
+                        <div class="panel-body">
+                            <form novalidate>
+                                <div class="form-group" ng-controller="dateTimeController ">
+                                    <label>便當團名稱</label>
+                                    <input type="text" class="form-control " ng-model="newParty.name " required>
+                                    <label>開始時間</label>
+                                    <input type="text" class="datepicker form-control " datetime="yyyy-MM-dd hh:mm:ss a " ng-model="newParty.create_date " required>
+                                    <label>結束時間</label>
+                                    <input type="text" class="form-control " datetime="yyyy-MM-dd hh:mm:ss a " ng-model="newParty.expired_date " required>
+                                    <br>
+                                    <button type="submit " class="btn btn-success pull-right " ng-click="onSubmitNewParty(newParty) ">添加</button>
+                                    <button type="button " class="btn btn-default pull-right " ng-click="onClickPartyCreationCancel() ">取消</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                    <div class="image-view panel-body">
+                    
+                    <div class="image-view">
                         <!-- todo: show image if exist -->
                         <!-- ngSrc trick for update -->
                         <a href="{{ selectStore.image }}" target="_blank" class="thumbnail">
@@ -112,6 +147,7 @@
                         </div>
                     </div>
 
+                    <hr>
 
                     <div class="store-info-view">
                         <div ng-show="userInfo.role == 0">
@@ -121,49 +157,33 @@
                         </div>
                         
                         <div ng-show="userInfo.role >= 1">
-                            <p>名稱：<a href="#" editable-text="selectStore.newName" onbeforesave="onUpdateStoreName($data)" buttons="no">{{selectStore.newName || 'empty'}}</a></p>
-                            <p>電話：<a href="#" editable-text="selectStore.newPhoneNumber" onbeforesave="onUpdateStorePhoneNumber($data)" buttons="no">{{selectStore.newPhoneNumber || 'empty'}}</a></p>
-                            <p>滿多少外送：<a href="#" editable-text="selectStore.newMinSpending" onbeforesave="onUpdateStoreMinSpending($data)" buttons="no">{{selectStore.newMinSpending || 'empty'}}</a></p>
+                            <p><strong>名稱：</strong><a href="#" editable-text="selectStore.newName" onbeforesave="onUpdateStoreName($data)" buttons="no">{{selectStore.newName || 'empty'}}</a></p>
+                            <p><strong>電話：</strong><a href="#" editable-text="selectStore.newPhoneNumber" onbeforesave="onUpdateStorePhoneNumber($data)" buttons="no">{{selectStore.newPhoneNumber || 'empty'}}</a></p>
+                            <p><strong>滿多少外送：</strong><a href="#" editable-text="selectStore.newMinSpending" onbeforesave="onUpdateStoreMinSpending($data)" buttons="no">{{selectStore.newMinSpending || 'empty'}}</a></p>
                         </div>
                     </div>
-
-                    <br/>
-
-                    <div class="party-creation" ng-show="partyCreationVisible && (userInfo.role >= 1)">
-                        <button class="ready-to-create-party btn btn-default btn-block " ng-show="!partyCreationFormVisible
-                                " ng-click="onClickPartyCreationButton() ">
-                            新增便當團
-                        </button>
-                        <div class="party-creation-form " ng-show="partyCreationFormVisible ">
-                            <form novalidate>
-                                <div class="form-group" ng-controller="dateTimeController ">
-                                    <label>便當團名稱</label>
-                                    <input type="text" class="form-control " ng-model="newParty.name " required>
-                                    <label>開始時間</label>
-                                    <input type="text" class="datepicker form-control " datetime="yyyy-MM-dd hh:mm:ss a " ng-model="newParty.create_date " required>
-                                    <label>結束時間</label>
-                                    <input type="text" class="form-control " datetime="yyyy-MM-dd hh:mm:ss a " ng-model="newParty.expired_date " required>
-                                    <br>
-                                    <button type="submit " class="btn btn-success pull-right " ng-click="onSubmitNewParty(newParty) ">添加</button>
-                                    <button type="button " class="btn btn-default pull-right " ng-click="onClickPartyCreationCancel() ">取消</button>
-                                </div>
-                            </form>
-                        </div>
-                        <!-- Show party creation view if authority passed -->
-                    </div>
+                    
                 </div>
 
                 <!-- store-detail-view -->
-                <div class="store-detail-view col-md-6 panel panel-default main-layout" ng-show="selectStore != null ">
+                <div class="store-detail-view col-md-6 panel panel-default box-shadow--8dp" ng-show="selectStore != null ">
+                    <h4>
+                        商品列表
+                        <button ng-show="userInfo.role >=1 && !newProduct.formVisible" ng-click="newProduct.onClickFormVisible()" type="button" class="btn btn-default" aria-label="Add store" title="新增商品 ...">
+                            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                        </button>
+                    </h4>
+                    
                     <div class="products-view">
 
-                        <div class="product-creation panel panel-default" ng-show="newProduct.enable && userInfo.role >= 1">
-                            <div class="panel-heading">商品列表</div>
-                            <div class="panel-body">
-                                <button class="ready-to-create-product btn btn-default btn-block" ng-show="!newProduct.formVisible" ng-click="newProduct.onClickFormVisible() ">
+                        <div>
+                            <!-- New product -->
+                            <div class="product-creation panel panel-default" ng-show="newProduct.enable && userInfo.role >= 1">
+                                
+                                <!-- button class="ready-to-create-product btn btn-default" ng-show="!newProduct.formVisible" ng-click="newProduct.onClickFormVisible() ">
                                     新增商品
-                                </button>
-                                <div class="product-creation-form" ng-show="newProduct.formVisible">
+                                </button -->
+                                <div class="product-creation-form panel-body" ng-show="newProduct.formVisible">
                                     <form novalidate>
                                         <div class="form-group">
                                             <label>商品名稱</label>
@@ -177,18 +197,16 @@
                                     </form>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="table-container">
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
                                         <th>
-                                            <input type="text" class="col-lg-3" placeholder="商品篩選 ..." ng-model="productFilterValue">
+                                            <input type="text" class="col-lg-3" placeholder="商品搜尋 ..." ng-model="productFilterValue">
                                         </th>
                                         <th>售價</th>
                                     </tr>
                                 </thead>
+                                
                                 <tbody>
                                     <tr ng-repeat="product in productsList | productFilter:productFilterValue" ng-class="{active: product.product_id == selectProduct.product_id} ">
                                         <td>
@@ -199,21 +217,29 @@
                                 </tbody>
                             </table>
                         </div>
-
-
                     </div>
-                    <br/>
-                    <div class="comments-view " ng-show="selectProduct != null">
+                    
+                    <hr>
+                    
+                    <!-- comments -->
+                    <div class="comments-view" ng-show="selectProduct != null">
                         <div class="comments-list ">
                             <div class="panel panel-default ">
                                 <div class="panel-heading ">評論：{{selectStore.name}} 的 {{selectProduct.product_name}}</div>
                                 <div class="panel-body ">
                                     <ul>
-                                        <li ng-repeat="comment in selectProductComments ">
+                                        <li ng-repeat="comment in selectProductComments " class="box-shadow--2dp">
                                             <div class="panel panel-default ">
-                                                <a href=" ">{{comment.user_name}}</a>
-                                                <span>分數：{{comment.stars}}</span>
-                                                <p>{{comment.text}}</p>
+                                                <div class="panel-heading">
+                                                    <a href=" ">{{comment.user_name}}</a>
+                                                    <span>分數：{{comment.stars}}</span>
+                                                    <span class="pull-right" ng-attr-title="{{ comment.date | date: 'yyyy-MM-dd HH:mm:ss' }}">
+                                                        {{ comment.date | date: 'MM/dd' }}
+                                                    </span>
+                                                </div>
+                                                <div class="panel-body">
+                                                    <p>{{comment.text}}</p>
+                                                </div>
                                             </div>
                                         </li>
                                     </ul>

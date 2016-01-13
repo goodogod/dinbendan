@@ -75,6 +75,7 @@ app
      *  }
      */
     $scope.storesList = [];
+    $scope.storeFilterValue = '';
     function setSelectStore(value) {
         $scope.selectStore = value;
         // for controller comunication
@@ -566,6 +567,19 @@ app
       var filtered = [];
       angular.forEach(items, function (item) {
           if (item.product_name.match(wildcard)) {
+              filtered.push(item);
+          }
+      });
+      
+      return filtered;
+    };
+})
+
+.filter('storeFilter', function () {
+    return function (items, wildcard) {
+      var filtered = [];
+      angular.forEach(items, function (item) {
+          if (item.name.match(wildcard)) {
               filtered.push(item);
           }
       });

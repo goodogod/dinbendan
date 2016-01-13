@@ -68,6 +68,10 @@ function getProductsList($http, token, storeID, outProductsList) {
 
 /*
  * Get comments list.
+ * comment: {
+ *   ...,
+ *   createDate: Date
+ * }
  */
 function getCommentsList($http, token, productID, outCommentsList) {
     var req = {
@@ -81,6 +85,7 @@ function getCommentsList($http, token, productID, outCommentsList) {
         if (response.success) {
             for (var i = 0; i < response.comments.length; i++) {
                 outCommentsList.push(response.comments[i]);
+                outCommentsList[outCommentsList.length - 1].createDate = new Date(response.comments[i].date);
             }
         }
     });

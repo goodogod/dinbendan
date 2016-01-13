@@ -428,7 +428,9 @@ app
             user_name: string,
             text: string, // markdown
             date: string,
-            stars: integer
+            stars: integer,
+            
+            createDate: Date
         },
         ...
     ]
@@ -596,6 +598,9 @@ app
                     $http(req).success(function (response) {
                         if (response.success) {
                             $scope.selectProductComments = response.comments;
+                            $scope.selectProductComments.forEach(function (comment, index) {
+                                comment.createDate = new Date(comment.date);
+                            })
                             //alert(JSON.stringify(response.comments));
                         }
                     });
@@ -673,9 +678,9 @@ app
                  && $scope.paramDate.getDate() <= end_date.getDate()) {
                     $scope.todayParties.push(response.parties[i]);
 
-                    // active first party
+                    // active last party
                     if ($scope.todayParties.length > 0) {
-                        var selParty = $scope.todayParties[0];
+                        var selParty = $scope.todayParties[$scope.todayParties.length - 1];
                         if (queryPartyID !== "") {
                             $scope.todayParties.forEach(function (party, index) {
                                 if (party.party_id == queryPartyID) {
@@ -688,10 +693,10 @@ app
                             selParty.creator_id, selParty.store_id, selParty.creator,
                             selParty.store, selParty.create_date, selParty.expired_date,
                             selParty.ready, selParty.orders_count);
-                        console.log($scope.activeParty.createDate.getTime());
-                        console.log($scope.activeParty.expiredDate.getTime());
-                        console.log($scope.today.getTime());
-                        console.log($scope.today);
+                        //console.log($scope.activeParty.createDate.getTime());
+                        //console.log($scope.activeParty.expiredDate.getTime());
+                        //console.log($scope.today.getTime());
+                        //console.log($scope.today);
                     } else {
                         $scope.activeParty = null;
                     }
