@@ -210,7 +210,7 @@
                                 <tbody>
                                     <tr ng-repeat="product in productsList | productFilter:productFilterValue" ng-class="{active: product.product_id == selectProduct.product_id} ">
                                         <td>
-                                            <a href=" " ng-click="clickProduct($index) ">{{product.product_name}}</a>
+                                            <a href=" " ng-click="clickProduct(product) ">{{product.product_name}}</a>
                                         </td>
                                         <td>{{product.price | currency}}</td>
                                     </tr>

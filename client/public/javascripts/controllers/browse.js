@@ -349,15 +349,15 @@ app
         $scope.productsList.length = 0;
         $scope.selectProductComments.length = 0;
     }
-    $scope.clickProduct = function (productIndex) {
+    $scope.clickProduct = function (product) {
         if ($scope.selectProduct
-            && $scope.productsList[productIndex].product_id == $scope.selectProduct.product_id) {
+            && product.product_id == $scope.selectProduct.product_id) {
             $scope.selectProduct = null;
             $scope.selectProductComments.length = 0;
             //clearProducts();
         }
         else {
-            $scope.selectProduct = $scope.productsList[productIndex];
+            $scope.selectProduct = product;
             $scope.selectProductComments.length = 0;
             getCommentsList($http, token, $scope.selectProduct.product_id, $scope.selectProductComments);
         }
