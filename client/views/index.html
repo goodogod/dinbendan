@@ -132,7 +132,14 @@
 
                             <!-- 結案鈕 -->
                             <div class="clearing">
-                                <button ng-click="activePartyResult.onShow()" ng-show="activeParty != null" ng-class="{ 'btn-success': !activeParty.ready, 'btn-default': activeParty.ready }" type="button" class="btn pull-right" data-toggle="modal" data-target=".party-result-modal">結算</button>
+                                <button 
+                                  ng-click="activePartyResult.onShow()" 
+                                  ng-show="activeParty != null" 
+                                  ng-class="{ 'btn-success': !activeParty.ready, 'btn-default': activeParty.ready }"
+                                  class="btn pull-right show-result-btn" 
+                                  type="button" data-toggle="modal">
+                                    結算
+                                </button>
                             </div>
 
                             <!-- 剩餘時間 -->
@@ -147,12 +154,12 @@
                                     <timer end-time="activeParty.expiredDate">還有 {{hours}} 時, {{minutes}} 分, {{seconds}} 秒 結束。</timer>
                                 </div>
                                 <div ng-show="activeParty.expiredDate.getTime() < today.getTime()">
-                                    <span>便當團已過期！</span>
+                                    <span>便當團已到期！</span>
                                 </div>
                             </div>
 
                             <!-- 統計Modal -->
-                            <div class="modal fade party-result-modal">
+                            <div class="modal fade" id="party-result-modal" role="dialog">
                                 <div class="modal-dialog">
                                     <div class="modal-content">
                                         <div class="modal-header">
@@ -188,9 +195,9 @@
                                                     </td>
                                                 </tr>
                                                 <tr>
-                                                    <td><b>Total</b></td>
-                                                    <td><b>{{ activePartyResult.getTotalPrice() | currency }}</b></td>
-                                                    <td></td>
+                                                    <td><strong>Total</strong></td>
+                                                    <td><strong>{{ activePartyResult.getTotalPrice() | currency }}</strong></td>
+                                                    <td><strong>{{ activePartyResult.getTotalCount() }}</strong></td>
                                                     <td></td>
                                                 </tr>
                                                 <tbody>
@@ -231,9 +238,15 @@
                                             </td>
                                             <td>{{orderSummary.price | currency}}</td>
                                             <td>
-                                                <span class="tag label label-primary box-shadow--2dp" ng-repeat="user in orderSummary.users">
+                                                <span 
+                                                  ng-repeat="user in orderSummary.users"
+                                                  class="tag label label-primary box-shadow--2dp">
                                                     <span>{{user.name}}</span>
-                                                    <a ng-show="userID == user.id && activeParty.ready == false" ng-click="orderSummaries.onDeleteOrder(user)"><i class="remove glyphicon glyphicon-remove-sign glyphicon-white"></i></a>
+                                                    <a 
+                                                      ng-show="userID == user.id && activeParty.available(today)" 
+                                                      ng-click="orderSummaries.onDeleteOrder(user)">
+                                                        <i class="remove glyphicon glyphicon-remove-sign glyphicon-white"></i>
+                                                    </a>
                                                 </span>
                                             </td>
                                         </tr>

@@ -23,8 +23,8 @@ Party.prototype = {
           Available condition:
           * party not ready. 
         */
-        //return (!this.ready && this.createDate.getTime() <= today.getTime() && today.getTime() <= this.expiredDate.getTime());
-        return (!this.ready);
+        return (!this.ready && this.createDate.getTime() <= today.getTime() && today.getTime() <= this.expiredDate.getTime());
+        //return (!this.ready);
     }
 };
 
@@ -67,7 +67,7 @@ Store.prototype = {
 ======================================================*/
 app
 
-.controller('mainController', function ($scope, $http, userInfoService) {
+.controller('mainController', function ($scope, $http, $interval, userInfoService) {
     
     /*
      * query string: d=yyyymmdd,p=id
@@ -107,6 +107,11 @@ app
     }
     $scope.paramDate = today;
     $scope.today = new Date();
+    
+    // update 'today' object every second.
+    $interval(function () { 
+        $scope.today = new Date();
+    }, 1000);
     
     var queryPartyID = getParameterByName('p');
     
@@ -187,7 +192,7 @@ app
     };
 
     // 更新 orderSummaries
-    $scope.updateOrderSummaries = function (orderSummaries, activeParty, productsList, token, organizationID) {
+    $scope.updateOrderSummaries = function (orderSummaries, activeParty, productsList, token, organizationID, after) {
         orderSummaries.length = 0;
         if ($scope.activeParty) {
             // get orders list
@@ -255,6 +260,10 @@ app
                         });
                     }
                 }
+                
+                if (after) {
+                    after();
+                }
             });
         } // end of if (activeParty)
     };
@@ -285,7 +294,7 @@ app
         ]
     */
     $scope.productsList = [];
-    $scope.updateProductsListAndOrderSummaries = function (productsList, storeID, token, organizationID) {
+    $scope.updateProductsListAndOrderSummaries = function (productsList, storeID, token, organizationID, after) {
         productsList = [];
         
         var req = {
@@ -301,7 +310,7 @@ app
                     productsList.push(response.products[i]);
                 }
 
-                $scope.updateOrderSummaries($scope.orderSummaries, $scope.activeParty, productsList, token, organizationID);
+                $scope.updateOrderSummaries($scope.orderSummaries, $scope.activeParty, productsList, token, organizationID, after);
             }
         });
     };
@@ -329,8 +338,6 @@ app
     
     
     $scope.activePartyResult = {
-        visible: true, // todo: 根據權限顯示
-        modalVisible: false,
         /* { product, price, users, note } */
         orderResults: [],
         
@@ -338,9 +345,19 @@ app
             if (!$scope.activeParty) {
                 return;
             }
-            $scope.updateProductsListAndOrderSummaries($scope.productsList, $scope.activeParty.store_id, token, organizationID);
-            this.updateOrderResults(this.orderResults);
-            this.modalVisible = true;
+            var thisPartyResult = this;
+            $scope.updateProductsListAndOrderSummaries(
+                $scope.productsList, 
+                $scope.activeParty.store_id, 
+                token, organizationID,
+                function () {
+                    // It must update result after orders are updated.
+                    thisPartyResult.updateOrderResults(thisPartyResult.orderResults);
+                    // Use js to show modal manually.
+                    $('#party-result-modal').modal();
+                });
+            
+            
         },
         
         updateOrderResults: function (orderResults) {
@@ -395,6 +412,14 @@ app
             var total = 0;
             this.orderResults.forEach(function (summary) {
                 total = total + summary.price * summary.users.length;
+            });
+            return total;
+        },
+        
+        getTotalCount: function () {
+            var total = 0;
+            this.orderResults.forEach(function (summary) {
+                total = total + summary.users.length;
             });
             return total;
         }
