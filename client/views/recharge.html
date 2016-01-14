@@ -26,57 +26,46 @@
             </div>
 
             <div class="users-view panel panel-default box-shadow--8dp">
-                <div class="panel-body">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>使用者名稱</th>
-                                <th>錢包</th>
-                                <th>儲值</th>
-                                <th>備註</th>
-                            </tr>
-                            
-                            <tr 
-                            ng-repeat="user in usersList | orderBy:'name' | userFilter:userFilterValue"
-                            ng-class="{'danger': user.money < 0, 'warning': user.money < 100 && user.money >= 0}"
-                            >
-                                <td>{{ user.name }}</td>
-                                <td>{{ user.money | currency }}</td>
-                                <td>
-                                    <form ng-show="userInfo.role >= 2" class="form-inline">
-                                        <div class="form-group">
-                                            <label class="sr-only" for="InputAmount">Amount (in dollars)</label>
-                                            <div class="input-group">
-                                                <div class="input-group-addon">$</div>
-                                                <input type="text" class="form-control" id="InputAmount" placeholder="輸入金額" ng-model="user.inputAmount">
-                                            </div>
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>使用者名稱</th>
+                            <th>錢包</th>
+                            <th>儲值</th>
+                        </tr>
+                        
+                        <tr 
+                        ng-repeat="user in usersList | orderBy:'name' | userFilter:userFilterValue"
+                        ng-class="{'danger': user.money < 0, 'warning': user.money < 100 && user.money >= 0}"
+                        >
+                            <td>{{ user.name }}</td>
+                            <td>{{ user.money | currency }}</td>
+                            <td>
+                                <form ng-show="userInfo.role >= 2" class="form-inline">
+                                    <div class="form-group">
+                                        <label class="sr-only" for="InputAmount">Amount (in dollars)</label>
+                                        <div class="input-group">
+                                            <div class="input-group-addon">$</div>
+                                            <input type="text" class="form-control" id="InputAmount" placeholder="輸入金額" ng-model="user.inputAmount">
                                         </div>
-                                        <button type="submit" class="btn btn-primary" ng-disabled="user.inputAmount == 0" ng-click="user.recharge()">儲值</button>
-                                    </form>
-                                    <!--
-                                        <ul class="dropdown-menu">
-                                        <li><a href="#">Action</a></li>
-                                        <li><a href="#">Another action</a></li>
-                                        <li><a href="#">Something else here</a></li>
-                                        <li role="separator" class="divider"></li>
-                                        <li><a href="#">Separated link</a></li>
-                                        <li role="separator" class="divider"></li>
-                                        <li><a href="#">One more separated link</a></li>
-                                    </ul>
-                                    -->
-                                </td>
-                                <td ng-show="user.money < 0">
-                                    負債中！請儘速儲值！
-                                </td>
-                                <td ng-show="user.money >= 0 && user.money < 100">
-                                    錢包見底了！
-                                </td>
-                                <td ng-show="user.money >= 100">
-                                </td>
-                            </tr>
-                        </thead>
-                    </table>
-                </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary" ng-disabled="user.inputAmount == 0" ng-click="user.recharge()">儲值</button>
+                                </form>
+                                <!--
+                                    <ul class="dropdown-menu">
+                                    <li><a href="#">Action</a></li>
+                                    <li><a href="#">Another action</a></li>
+                                    <li><a href="#">Something else here</a></li>
+                                    <li role="separator" class="divider"></li>
+                                    <li><a href="#">Separated link</a></li>
+                                    <li role="separator" class="divider"></li>
+                                    <li><a href="#">One more separated link</a></li>
+                                </ul>
+                                -->
+                            </td>
+                        </tr>
+                    </thead>
+                </table>
             </div>
         </div>
 
