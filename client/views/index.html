@@ -236,10 +236,12 @@
                                         <tr ng-repeat="orderSummary in orderSummaries | productFilter:productFilterValue" ng-class="{active: orderSummary === selectOrderSummary}">
                                             <td>
                                                 <a href="" ng-click="clickOrder(orderSummary)">
-                                                    {{orderSummary.product}}
+                                                    {{ orderSummary.product }}
+                                                    <span ng-show="orderSummary.comments > 0" class="badge">{{ orderSummary.comments }}</span>
+                                                    <span ng-show="orderSummary.newProduct" class="badge">new</span>
                                                 </a>
                                             </td>
-                                            <td>{{orderSummary.price | currency}}</td>
+                                            <td>{{ orderSummary.price | currency }}</td>
                                             <td>
                                                 <span 
                                                   ng-repeat="user in orderSummary.users"

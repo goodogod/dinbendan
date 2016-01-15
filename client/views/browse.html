@@ -210,7 +210,10 @@
                                 <tbody>
                                     <tr ng-repeat="product in productsList | productFilter:productFilterValue" ng-class="{active: product.product_id == selectProduct.product_id} ">
                                         <td>
-                                            <a href=" " ng-click="clickProduct(product) ">{{product.product_name}}</a>
+                                            <a href=" " ng-click="clickProduct(product)">
+                                                {{product.product_name}}
+                                                <span ng-show="product.comments > 0" class="badge">{{ product.comments }}</span>
+                                            </a>
                                         </td>
                                         <td>{{product.price | currency}}</td>
                                     </tr>
@@ -272,8 +275,8 @@
     <script type="text/javascript" src="javascripts/services/user-info.js "></script>
 
     <script type="text/javascript" src="javascripts/controllers/controller-tools.js "></script>
-    <script type="text/javascript" src="javascripts/controllers/header.js "></script>
-    <script type="text/javascript" src="javascripts/controllers/browse.js "></script>
+    <script type="text/javascript" src="javascripts/controllers/header.js"></script>
+    <script type="text/javascript" src="javascripts/controllers/browse.js"></script>
 </body>
 
 </html>

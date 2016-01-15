@@ -153,6 +153,8 @@ app
           {
               product,
               price,
+              comments,
+              newProduct,
               users: [
                   {
                       id,
@@ -238,9 +240,20 @@ app
                         }
 
                         if (!curSummary) {
+                            var comments = 0;
+                            var productExists = false;
+                            productsList.forEach(function (product) {
+                                if (product.product_name === curOrder.product) {
+                                    comments = product.comments;
+                                    productExists = true;
+                                }
+                            })
+                            
                             var newSummary = {
                                 product: curOrder.product,
                                 price: curOrder.price,
+                                comments: comments,
+                                newProduct: !productExists,
                                 users: []
                             };
                             newSummary.users.push({
@@ -268,6 +281,8 @@ app
                         orderSummaries.push({
                             product: productsList[i].product_name,
                             price: productsList[i].price,
+                            comments: productsList[i].comments,
+                            newProduct: false,
                             users: []
                         });
                     }
@@ -299,7 +314,8 @@ app
                 product_id: integer,
                 product_name: string,
                 store_id: integer,
-                price: float
+                price: float,
+                comments: integer
             },
             { ... },
             ...
@@ -442,6 +458,8 @@ app
           product_id, // < 0 if product is new.
           product,
           price,
+          comments,
+          newProduct,
           users: [
               {
                   id,
@@ -525,7 +543,6 @@ app
 
                 $http(req).success(function (response) {
                     if (response.success) {
-                        console.log(response.order_id);
                         $scope.updateProductsListAndOrderSummaries($scope.productsList, $scope.activeParty.store_id, token, organizationID);
                     } else {
                         console.log(response.message);
@@ -695,12 +712,6 @@ app
                 
                 var start_date = new Date(DateStandardFormat(response.parties[i].create_date));
                 var end_date = new Date(DateStandardFormat(response.parties[i].expired_date));
-                //console.log('name: ' + response.parties[i].name);
-                //console.log('today: ' + today.getTime());
-                //console.log('start_date: ' + start_date.getTime());
-                //console.log('end_date: ' + end_date.getTime());
-                //if (start_date.getTime() <= today.getTime()
-                //    && today.getTime() <= end_date.getTime()) {
                 if (start_date.getDate() <= $scope.paramDate.getDate() 
                  && $scope.paramDate.getDate() <= end_date.getDate()) {
                     $scope.todayParties.push(response.parties[i]);
@@ -720,17 +731,10 @@ app
                             selParty.creator_id, selParty.store_id, selParty.creator,
                             selParty.store, selParty.create_date, selParty.expired_date,
                             selParty.ready, selParty.orders_count);
-                        //console.log($scope.activeParty.createDate.getTime());
-                        //console.log($scope.activeParty.expiredDate.getTime());
-                        //console.log($scope.today.getTime());
-                        //console.log($scope.today);
                     } else {
                         $scope.activeParty = null;
                     }
                 }
-                //alert(start_date);
-                //response[i]
-                
             }
 
             // initialize orderSummaries
@@ -743,6 +747,15 @@ app
     });
     
     initializeCommentObjects($scope, $http, token);
+    // 更新 comment 後, 執行 onAfterSubmitComment post hook, 更新 order summaries.
+    $scope.newComment.onAfterSubmitComment = function () {
+        $scope.updateProductsListAndOrderSummaries(
+            $scope.productsList, $scope.activeParty.store_id, token, organizationID,
+            function () {
+                $scope.selectOrderSummary = null;
+            }
+        );
+    };
     
     $scope.orderResultFilterValue = '';
     

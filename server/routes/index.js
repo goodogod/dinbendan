@@ -286,7 +286,7 @@ router.post('/api/v1/auth', function(req, res) {
             });
         }
 
-        console.log('router.post(/api/v1/auth): connection success, ready to query ...');
+        //console.log('router.post(/api/v1/auth): connection success, ready to query ...');
 
         // SQL Query > Select Data
         //var query = client.query('SELECT name, password FROM users;');
@@ -354,7 +354,7 @@ router.use('/api', function(req, res, next) {
 
     // decode token
     if (token) {
-        console.log('enter token');
+        //console.log('enter token');
         // verifies secret and checks exp
         jwt.verify(token, secretString, function(err, decoded) {
             if (err) {
@@ -544,7 +544,7 @@ router.put('/api/v1/user/:user_id/recharge', function (req, res) {
     
     pg.connect(connectionString, function(err, client, done) {
         var queryString = sq.updateUserMoney_F2.format(uiUserID, uiAmount);
-        console.log(queryString);
+        //console.log(queryString);
         //var result = 0.0;
         var query = client.query(queryString, function (err, results) {
             if (err) {
@@ -696,7 +696,7 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
             ' ORDER BY parties.party_id ASC;';
 
         queryString = queryString.format(queryOrganization, uiYear, uiMonth, lastDay);
-        console.log(queryString);
+        //console.log(queryString);
         var query = client.query(queryString);
 
         if (err) {
@@ -1208,7 +1208,7 @@ router.get('/api/v1/store/:store_id', function (req, res) {
     var results = [];
     pg.connect(connectionString, function(err, client, done) {
         var queryString = sq.getStoreInfo_F1.format(uiStoreID);
-        console.log(queryString);
+        //console.log(queryString);
         var query = client.query(queryString);
 
         if (err) {
@@ -1420,7 +1420,7 @@ router.put('/api/v1/store/:store_id', function (req, res) {
             
             if (cols.length > 0) {
                 var queryString = 'UPDATE stores SET {0} WHERE store_id = {1};'.format(sq.arrayToSQLUpdateString(cols, vals), uiStoreID);
-                console.log(queryString);
+                //console.log(queryString);
                 //if (imagePath) console.log(imagePath);
                 var query = client.query(queryString);
         
@@ -1463,7 +1463,8 @@ router.put('/api/v1/store/:store_id', function (req, res) {
         product_id: integer,
         product_name: string,
         store_id: integer,
-        price: integer
+        price: integer,
+        comments: integer
       },
       ...
     ]
@@ -1656,7 +1657,7 @@ router.post('/api/v1/product/comment', function (req, res) {
                 sq.arrayToSQLInsertString(cols),
                 sq.arrayToSQLInsertString(vals),
                 'comment_id');
-            console.log(queryString);
+            //console.log(queryString);
             var query = client.query(queryString);
     
             if (err) {

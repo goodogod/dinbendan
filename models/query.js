@@ -2,10 +2,10 @@
  * get Products list by store ID.
  * Parameter:
  *   0: store_id
- * Return: [ { prodcut_id, product_name, price }, { ... }, ... ]
+ * Return: [ { prodcut_id, product_name, price, comments }, { ... }, ... ]
  */
 module.exports.getProductsListByStoreID_F1 = 
-    'SELECT product_id, name AS product_name, store_id, price FROM products WHERE (store_id = {0}) ORDER BY product_name;';
+    'SELECT product_id, name AS product_name, store_id, price, (SELECT COUNT(comments.product_id) AS comments FROM comments WHERE comments.product_id = products.product_id) FROM products WHERE (store_id = {0}) ORDER BY product_name;';
 
 /*
  * Get product info.

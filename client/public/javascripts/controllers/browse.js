@@ -370,7 +370,7 @@ app
         }
         else {
             $scope.selectProduct = product;
-            $scope.newComment.productID = product.id;
+            $scope.newComment.productID = product.product_id;
             $scope.selectProductComments.length = 0;
             getCommentsList($http, token, $scope.selectProduct.product_id, $scope.selectProductComments);
         }
@@ -431,8 +431,9 @@ app
         }
     };
     
+    // Initialize $scope.newComment, $scope.selectProductComments
     initializeCommentObjects($scope, $http, token);
-    
+    $scope.newComment.onAfterSubmitComment = updateProductsList;
     
     updateStoresList();
 })

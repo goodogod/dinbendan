@@ -159,6 +159,7 @@ function initializeCommentObjects($scope, $http, token) {
             this.formVisible = true;
         },
         onClickSubmit: function (userID) {
+            var curObject = this;
             var curProductID = this.productID;
             if (confirm('確定發表評論？')) {
                 var curNewComment = $scope.newComment;
@@ -183,12 +184,17 @@ function initializeCommentObjects($scope, $http, token) {
                 .finally(function () {
                     curNewComment.text = '';
                     curNewComment.stars = 3;
+                    curObject.formVisible = false;
+                    if (curObject.onAfterSubmitComment) {
+                        curObject.onAfterSubmitComment();
+                    }
                 });
             }
         },
         onClickCancel: function () {
             this.formVisible = false;
-        }
+        },
+        onAfterSubmitComment: null
     };
 }
 
