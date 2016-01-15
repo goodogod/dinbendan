@@ -65,6 +65,18 @@ Store.prototype = {
 /*======================================================
   Control main page.
 ======================================================*/
+
+app.directive('commentCreation', function () {
+    var scripts = document.getElementsByTagName("script")
+    var currentScriptPath = scripts[scripts.length-1].src;
+    currentScriptPath = currentScriptPath.replace('index.js', '');
+    //alert(currentScriptPath);
+    return {
+        restrict: 'EA',
+        templateUrl: currentScriptPath + '../directives/comment-creation.html'
+    };
+});
+
 app
 
 .controller('mainController', function ($scope, $http, $interval, userInfoService) {
@@ -609,26 +621,14 @@ app
                     }
                 }
 
-                $scope.selectProductComments = null;
+                $scope.selectProductComments.length = 0;
+                
+                
+                $scope.selectProductComments.length = 0;
                 if (selProductInStore) {
-                    var req = {
-                        method: 'GET',
-                        url: '/api/v1/product/' + selProductInStore.product_id + '/comments',
-                        params: {
-                            token: token,
-                            userID:         userID,
-                            organizationID: organizationID
-                        }
-                    };
-                    $http(req).success(function (response) {
-                        if (response.success) {
-                            $scope.selectProductComments = response.comments;
-                            $scope.selectProductComments.forEach(function (comment, index) {
-                                comment.createDate = new Date(comment.date);
-                            })
-                            //alert(JSON.stringify(response.comments));
-                        }
-                    });
+                    getCommentsList($http, token, selProductInStore.product_id, $scope.selectProductComments);
+                    
+                    $scope.newComment.productID = selProductInStore.product_id;
                     
                     // 保留給新建商品
                     $scope.selectOrderSummary.product_id = selProductInStore.product_id;
@@ -642,11 +642,13 @@ app
                     // probably new product
                     // 保留給新建商品
                     $scope.selectOrderSummary.product_id = -1;
+                    $scope.newComment.productID = -1;
                     
                     $scope.inputOrder.productName = $scope.selectOrderSummary.product;
                     $scope.inputOrder.price = $scope.selectOrderSummary.price;
                     //$scope.inputOrder.initialize();
                 }
+                
             }
         });
     };
@@ -739,6 +741,8 @@ app
 
         } // end of if (response.success)
     });
+    
+    initializeCommentObjects($scope, $http, token);
     
     $scope.orderResultFilterValue = '';
     

@@ -47,6 +47,17 @@ app.run(function(editableOptions) {
     editableOptions.theme = 'bs3'; // bootstrap3 theme. Can be also 'bs2', 'default'
 });
 
+app.directive('commentCreation', function () {
+    var scripts = document.getElementsByTagName("script")
+    var currentScriptPath = scripts[scripts.length-1].src;
+    currentScriptPath = currentScriptPath.replace('browse.js', '');
+    //alert(currentScriptPath);
+    return {
+        restrict: 'EA',
+        templateUrl: currentScriptPath + '../directives/comment-creation.html'
+    };
+});
+
 app
 .controller('browseController', function ($scope, $http, userInfoService, selectStoreService) {
     
@@ -353,11 +364,13 @@ app
         if ($scope.selectProduct
             && product.product_id == $scope.selectProduct.product_id) {
             $scope.selectProduct = null;
+            $scope.newComment.productID = -1;
             $scope.selectProductComments.length = 0;
             //clearProducts();
         }
         else {
             $scope.selectProduct = product;
+            $scope.newComment.productID = product.id;
             $scope.selectProductComments.length = 0;
             getCommentsList($http, token, $scope.selectProduct.product_id, $scope.selectProductComments);
         }
@@ -418,68 +431,8 @@ app
         }
     };
     
-    /*
-     * comments: [
-            {
-                comment_id: integer,
-                product_id: integer,
-                product_name: string,
-                user_id: integer,
-                user_name: string,
-                text: string, // markdown
-                date: string,
-                stars: integer
-            },
-            ...
-        ]
-     */
-    $scope.selectProductComments = [];
-    function updateCommentsList() {
-        $scope.selectProductComments.length = 0;
-        getCommentsList($http, token, $scope.selectProduct.product_id, $scope.selectProductComments);
-    }
+    initializeCommentObjects($scope, $http, token);
     
-    /* Comment creation structure */
-    $scope.newComment = {
-        enable: true,
-        formVisible: false,
-        text: '',
-        stars: 3,
-        image: '',
-        onClickFormVisible: function () {
-            this.formVisible = true;
-        },
-        onClickSubmit: function () {
-            if (confirm('確定發表評論？')) {
-                var curNewComment = $scope.newComment;
-                $http({
-                    url: '/api/v1/product/comment',
-                    method: 'POST',
-                    data: {
-                        product_id: $scope.selectProduct.product_id,
-                        comment_user_id: userID,
-                        text: this.text,
-                        stars: this.stars,
-                        image: '',
-                        token: token
-                    }
-                })
-                .success(function (res) {
-                    updateCommentsList();
-                })
-                .error(function (res) {
-                    alert(JSON.stringify(res));
-                })
-                .finally(function () {
-                    curNewComment.text = '';
-                    curNewComment.stars = 3;
-                });
-            }
-        },
-        onClickCancel: function () {
-            this.formVisible = false;
-        }
-    };
     
     updateStoresList();
 })

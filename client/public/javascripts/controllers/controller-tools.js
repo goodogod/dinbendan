@@ -125,6 +125,73 @@ function getUsersList($http, token, outUsersList, doneEvent) {
     });
 }
 
+function initializeCommentObjects($scope, $http, token) {
+    /*
+     * comments: [
+            {
+                comment_id: integer,
+                product_id: integer,
+                product_name: string,
+                user_id: integer,
+                user_name: string,
+                text: string, // markdown
+                date: string,
+                stars: integer
+            },
+            ...
+        ]
+     */
+    $scope.selectProductComments = [];
+    function updateCommentsList(productID) {
+        $scope.selectProductComments.length = 0;
+        getCommentsList($http, token, productID, $scope.selectProductComments);
+    }
+    
+    /* Comment creation structure */
+    $scope.newComment = {
+        productID: -1,
+        enable: true,
+        formVisible: false,
+        text: '',
+        stars: 3,
+        image: '',
+        onClickFormVisible: function () {
+            this.formVisible = true;
+        },
+        onClickSubmit: function (userID) {
+            var curProductID = this.productID;
+            if (confirm('確定發表評論？')) {
+                var curNewComment = $scope.newComment;
+                $http({
+                    url: '/api/v1/product/comment',
+                    method: 'POST',
+                    data: {
+                        product_id: curProductID,
+                        comment_user_id: userID,
+                        text: this.text,
+                        stars: this.stars,
+                        image: '',
+                        token: token
+                    }
+                })
+                .success(function (res) {
+                    updateCommentsList(curProductID);
+                })
+                .error(function (res) {
+                    alert(JSON.stringify(res));
+                })
+                .finally(function () {
+                    curNewComment.text = '';
+                    curNewComment.stars = 3;
+                });
+            }
+        },
+        onClickCancel: function () {
+            this.formVisible = false;
+        }
+    };
+}
+
 /* 
  * Get query string value.
  */

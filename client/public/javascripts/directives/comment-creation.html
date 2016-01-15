@@ -1,0 +1,39 @@
+<div class="comment-creation">
+    <button class="ready-to-create-comment btn btn-default btn-block " ng-click="newComment.onClickFormVisible()
+" ng-show="newComment.enable && !newComment.formVisible && newComment.productID >= 0">發表評論</button>
+    <div class="create-comment-form " ng-show="newComment.enable && newComment.formVisible ">
+        <form novalidate>
+            <!-- radio: 1, 2, 3, 4, 5 -->
+            <label>評分：</label>
+            <label class="radio-inline">
+                <input type="radio" name="stars" value="1" ng-model="newComment.stars"> 1
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="stars" value="2" ng-model="newComment.stars"> 2
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="stars" value="3" checked ng-model="newComment.stars"> 3
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="stars" value="4" ng-model="newComment.stars"> 4
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="stars" value="5" ng-model="newComment.stars"> 5
+            </label>
+            <br>
+            <label>評論：</label>
+            <textarea class="form-control" row="3" placeholder="最多 255 個字" ng-model="newComment.text "></textarea>
+            <br>
+            <button
+                ng-click="newComment.onClickSubmit(userInfo.userID)" 
+                type="submit" class="btn btn-success pull-right">
+                發表
+            </button>
+            <button 
+                ng-click="newComment.onClickCancel()"
+                type="button" class="btn btn-default pull-right">
+                取消
+            </button>
+        </form>
+    </div>
+</div>

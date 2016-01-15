@@ -114,6 +114,8 @@
                                     </li>
                                 </ul>
                             </div>
+                            
+                            <comment-creation></comment-creation>
                         </div>
                     </div>
                 </div>
@@ -219,7 +221,8 @@
                         </div>
                         <!-- orders list -->
                         <div class="row">
-                            <div class="orders-list table-container panel panel-default">
+                            <!-- 已扣款的 party 不需要限制 table 高度 -->
+                            <div ng-class="{ 'table-container': !activeParty.ready }" class="orders-list panel panel-default">
                                 <!-- table -->
                                 <table class="table table-hover ">
                                     <thead>
