@@ -267,7 +267,7 @@
                                                 <span
                                                   ng-repeat="user in orderSummary.users">
                                                     <span
-                                                      ng-class="{ 'label-info': userID == user.id, 'label-primary': userID != user.id }"
+                                                      ng-class="{ 'label-primary': userID == user.id, 'label-default': userID != user.id }"
                                                       class="tag label box-shadow--2dp">
                                                         <span>{{user.name}}</span>
                                                         <a 
