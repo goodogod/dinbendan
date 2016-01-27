@@ -1,3 +1,4 @@
+/* global getDateTimeString */
 /* global DateStandardFormat */
 'use strict';
 
@@ -773,6 +774,7 @@ app
                             return false;
                         } 
                     })
+                    /*
                     .filter(function partyOnTime(party, index) {
                         if (getDateTimeString(party.createDate) <= getDateTimeString($scope.today) &&
                             getDateTimeString($scope.today) <= getDateTimeString(party.expiredDate)) {
@@ -780,7 +782,9 @@ app
                           } else {
                               return false;
                           }
-                    });
+                    })
+                    */
+                    ;
                     
                     if (candidateParties.length > 0) {
                         selParty = candidateParties[candidateParties.length - 1];
