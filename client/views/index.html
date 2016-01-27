@@ -53,8 +53,26 @@
                             <span class="caret"></span>
                         </button>
                         <ul class="dropdown-menu btn-block" aria-labelledby="dropdownMenu1">
-                            <li class="today-party" ng-repeat="todayParty in todayParties" ng-class="{active: todayParty.party_id == activeParty.party_id }">
-                                <a href="javascript:void(0)" ng-click="clickParty(todayParty)">{{todayParty.name}}</a>
+                            <li  
+                              ng-repeat="todayParty in todayParties" 
+                              ng-class="{active: todayParty.party_id == activeParty.party_id }"
+                              class="today-party">
+                                <a 
+                                  href="javascript:void(0)" 
+                                  ng-click="clickParty(todayParty)">
+                                    {{todayParty.name}}
+                                    <span
+                                      ng-show="todayParty.ready"
+                                      class="tag label label-default pull-right box-shadow--2dp">
+                                        已扣款
+                                    </span>
+                                    
+                                    <span
+                                      ng-show="!todayParty.ready && todayParty.expiredDate.getDate() == paramDate.getDate()"
+                                      class="tag label label-warning pull-right box-shadow--2dp">
+                                        這天截止
+                                    </span>
+                                </a>
                             </li>
                         </ul>
                         
@@ -153,7 +171,7 @@
                                     <span>便當團還沒開始！</span>
                                 </div>
                                 <div ng-show="activeParty.createDate.getTime() <= today.getTime() && today.getTime() <= activeParty.expiredDate.getTime()">
-                                    <timer end-time="activeParty.expiredDate">還有 {{hours}} 時, {{minutes}} 分, {{seconds}} 秒 結束。</timer>
+                                    <timer end-time="activeParty.expiredDate">還有 {{days}} 天, {{hours}} 時, {{minutes}} 分, {{seconds}} 秒 結束。</timer>
                                 </div>
                                 <div ng-show="activeParty.expiredDate.getTime() < today.getTime()">
                                     <span>便當團已到期！</span>
@@ -245,7 +263,8 @@
                                             <td>
                                                 <span 
                                                   ng-repeat="user in orderSummary.users"
-                                                  class="tag label label-primary box-shadow--2dp">
+                                                  ng-class="{ 'label-info': userID == user.id, 'label-primary': userID != user.id }"
+                                                  class="tag label box-shadow--2dp">
                                                     <span>{{user.name}}</span>
                                                     <a 
                                                       ng-show="userID == user.id && activeParty.available(today)" 

@@ -1,3 +1,4 @@
+/* global DateStandardFormat */
 'use strict';
 
 function Party(name, party_id, creator_id, store_id, creator, store, 
@@ -707,35 +708,103 @@ app
         if (response.success) {
             //alert(JSON.stringify(response.parties));
             //console.log('today: ' + today.getTime());
-            for (var i = 0; i < response.parties.length; i++) {
+            
+            // add createDate, expiredDate to all parties
+            response.parties.forEach(function (party) {
                 // response time format: yyyy-mm-dd hh:mm:ss
+                party.createDate = new Date(DateStandardFormat(party.create_date));
+                party.expiredDate = new Date(DateStandardFormat(party.expired_date));
+            });
+            
+            // Create $scope.todayParties
+            $scope.todayParties.length = 0;
+            response.parties.forEach(function (party) {
                 
-                var start_date = new Date(DateStandardFormat(response.parties[i].create_date));
-                var end_date = new Date(DateStandardFormat(response.parties[i].expired_date));
-                if (start_date.getDate() <= $scope.paramDate.getDate() 
-                 && $scope.paramDate.getDate() <= end_date.getDate()) {
-                    $scope.todayParties.push(response.parties[i]);
-
-                    // active last party
-                    if ($scope.todayParties.length > 0) {
-                        var selParty = $scope.todayParties[$scope.todayParties.length - 1];
-                        if (queryPartyID !== "") {
-                            $scope.todayParties.forEach(function (party, index) {
-                                if (party.party_id == queryPartyID) {
-                                    selParty = party;
-                                }
-                            });
+                if (party.createDate.getDate() <= $scope.paramDate.getDate() 
+                 && $scope.paramDate.getDate() <= party.expiredDate.getDate()) {
+                    $scope.todayParties.push(party);
+                }
+            });
+            
+            // active last party
+            if ($scope.todayParties.length > 0) {
+                //var selParty = $scope.todayParties[$scope.todayParties.length - 1];
+                var selParty = null;
+                if (queryPartyID !== "") {
+                    $scope.todayParties.forEach(function (party, index) {
+                        if (party.party_id == queryPartyID) {
+                            selParty = party;
                         }
-                        $scope.activeParty = selParty;
-                        $scope.activeParty = new Party(selParty.name, selParty.party_id,
-                            selParty.creator_id, selParty.store_id, selParty.creator,
-                            selParty.store, selParty.create_date, selParty.expired_date,
-                            selParty.ready, selParty.orders_count);
+                    });
+                }
+                
+                /* 
+                Find appropriate active party:
+                    if not ready:
+                        if expired at today:
+                            if on time:
+                                choose last one
+                            else:
+                                choose last one
+                        else:
+                            if find other parties not ready:
+                                choose last one
+                            else:
+                                choose last one
+                    else:
+                        choose last one
+                */
+                function partyNotReady(party, index) {
+                    if (party.ready == false) {
+                        return true;
                     } else {
-                        $scope.activeParty = null;
+                        return false;
                     }
                 }
+                
+                if (selParty == null) {
+                    var candidateParties = $scope.todayParties
+                    .filter(partyNotReady)
+                    .filter(function expiredAtToday(party, index) {
+                        if (party.expiredDate.getFullYear() == $scope.today.getFullYear() &&
+                            party.expiredDate.getMonth() == $scope.today.getMonth() &&
+                            party.expiredDate.getDate() == $scope.today.getDate() ) {
+                            return true;
+                        } else {
+                            return false;
+                        } 
+                    })
+                    .filter(function partyOnTime(party, index) {
+                        if (getDateTimeString(party.createDate) <= getDateTimeString($scope.today) &&
+                            getDateTimeString($scope.today) <= getDateTimeString(party.expiredDate)) {
+                              return true;
+                          } else {
+                              return false;
+                          }
+                    });
+                    
+                    if (candidateParties.length > 0) {
+                        selParty = candidateParties[candidateParties.length - 1];
+                    } else {
+                        // search not ready
+                        var notReadyParties = $scope.todayParties.filter(partyNotReady);
+                        if (notReadyParties.length > 0) {
+                            selParty = notReadyParties[notReadyParties.length - 1];
+                        } else {
+                            selParty = $scope.todayParties[$scope.todayParties.length - 1];
+                        }
+                    }
+                }
+                
+                //$scope.activeParty = selParty;
+                $scope.activeParty = new Party(selParty.name, selParty.party_id,
+                    selParty.creator_id, selParty.store_id, selParty.creator,
+                    selParty.store, selParty.create_date, selParty.expired_date,
+                    selParty.ready, selParty.orders_count);
+            } else {
+                $scope.activeParty = null;
             }
+            
 
             // initialize orderSummaries
             if ($scope.activeParty) {
