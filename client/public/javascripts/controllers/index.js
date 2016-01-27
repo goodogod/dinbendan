@@ -754,17 +754,16 @@ app
                     else:
                         choose last one
                 */
-                function partyNotReady(party, index) {
-                    if (party.ready == false) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
                 
                 if (selParty == null) {
                     var candidateParties = $scope.todayParties
-                    .filter(partyNotReady)
+                        .filter(function partyNotReady(party, index) {
+                        if (party.ready == false) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    })
                     .filter(function expiredAtToday(party, index) {
                         if (party.expiredDate.getFullYear() == $scope.today.getFullYear() &&
                             party.expiredDate.getMonth() == $scope.today.getMonth() &&
@@ -787,7 +786,13 @@ app
                         selParty = candidateParties[candidateParties.length - 1];
                     } else {
                         // search not ready
-                        var notReadyParties = $scope.todayParties.filter(partyNotReady);
+                        var notReadyParties = $scope.todayParties.filter(function partyNotReady(party, index) {
+                            if (party.ready == false) {
+                                return true;
+                            } else {
+                                return false;
+                            }
+                        });
                         if (notReadyParties.length > 0) {
                             selParty = notReadyParties[notReadyParties.length - 1];
                         } else {

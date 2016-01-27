@@ -56,11 +56,12 @@
                             <li  
                               ng-repeat="todayParty in todayParties" 
                               ng-class="{active: todayParty.party_id == activeParty.party_id }"
+                              title="{{todayParty.name}}"
                               class="today-party">
                                 <a 
                                   href="javascript:void(0)" 
                                   ng-click="clickParty(todayParty)">
-                                    {{todayParty.name}}
+                                    
                                     <span
                                       ng-show="todayParty.ready"
                                       class="tag label label-default pull-right box-shadow--2dp">
@@ -72,6 +73,8 @@
                                       class="tag label label-warning pull-right box-shadow--2dp">
                                         這天截止
                                     </span>
+                                    
+                                    {{todayParty.name}}
                                 </a>
                             </li>
                         </ul>
