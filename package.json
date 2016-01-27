@@ -1,6 +1,6 @@
 {
   "name": "bentoiscoming",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "engines": {
     "node": "0.10.16",
     "npm": "1.3.8"

@@ -264,16 +264,20 @@
                                             </td>
                                             <td>{{ orderSummary.price | currency }}</td>
                                             <td>
-                                                <span 
-                                                  ng-repeat="user in orderSummary.users"
-                                                  ng-class="{ 'label-info': userID == user.id, 'label-primary': userID != user.id }"
-                                                  class="tag label box-shadow--2dp">
-                                                    <span>{{user.name}}</span>
-                                                    <a 
-                                                      ng-show="userID == user.id && activeParty.available(today)" 
-                                                      ng-click="orderSummaries.onDeleteOrder(user)">
-                                                        <i class="remove glyphicon glyphicon-remove-sign glyphicon-white"></i>
-                                                    </a>
+                                                <span
+                                                  ng-repeat="user in orderSummary.users">
+                                                    <span
+                                                      ng-class="{ 'label-info': userID == user.id, 'label-primary': userID != user.id }"
+                                                      class="tag label box-shadow--2dp">
+                                                        <span>{{user.name}}</span>
+                                                        <a 
+                                                        ng-show="userID == user.id && activeParty.available(today)" 
+                                                        ng-click="orderSummaries.onDeleteOrder(user)">
+                                                            <i class="remove glyphicon glyphicon-remove-sign glyphicon-white"></i>
+                                                        </a>
+                                                        
+                                                    </span>
+                                                    <br ng-if="$index % 5 == 4">
                                                 </span>
                                             </td>
                                         </tr>
