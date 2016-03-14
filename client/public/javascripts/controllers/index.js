@@ -766,9 +766,9 @@ app
                         }
                     })
                     .filter(function expiredAtToday(party, index) {
-                        if (party.expiredDate.getFullYear() == $scope.today.getFullYear() &&
-                            party.expiredDate.getMonth() == $scope.today.getMonth() &&
-                            party.expiredDate.getDate() == $scope.today.getDate() ) {
+                        if (party.expiredDate.getFullYear() == $scope.paramDate.getFullYear() &&
+                            party.expiredDate.getMonth() == $scope.paramDate.getMonth() &&
+                            party.expiredDate.getDate() == $scope.paramDate.getDate() ) {
                             return true;
                         } else {
                             return false;

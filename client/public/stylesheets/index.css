@@ -12,6 +12,10 @@
     padding: 5px;
 }
 
+.ready-to-order {
+    vertical-align: bottom;
+}
+
 /*
 .navbar-header {
     text-align: center;

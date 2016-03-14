@@ -166,18 +166,27 @@
                             </div>
 
                             <!-- 剩餘時間 -->
-                            <div ng-show="activeParty.ready" class="pull-right">
-                                <p>便當團已扣款。</p>
+                            <div class="pull-right">
+                                <div ng-show="activeParty.ready" class="label label-default">
+                                    <span>已扣款</span>
+                                </div>
                             </div>
+                            
                             <div ng-show="!activeParty.ready" class="pull-right">
-                                <div ng-show="today.getTime() < activeParty.createDate.getTime()">
-                                    <span>便當團還沒開始！</span>
+                                <div 
+                                  ng-show="today.getTime() < activeParty.createDate.getTime()"
+                                  class="label label-info">
+                                    <span>還沒開始！</span>
                                 </div>
-                                <div ng-show="activeParty.createDate.getTime() <= today.getTime() && today.getTime() <= activeParty.expiredDate.getTime()">
-                                    <timer end-time="activeParty.expiredDate">還有 {{days}} 天, {{hours}} 時, {{minutes}} 分, {{seconds}} 秒 結束。</timer>
+                                <div 
+                                  ng-show="activeParty.createDate.getTime() <= today.getTime() && today.getTime() <= activeParty.expiredDate.getTime()"
+                                  class="label label-warning">
+                                    <timer end-time="activeParty.expiredDate">還有 {{days}} 天 {{hours}} 時 {{minutes}} 分 {{seconds}} 秒 結束</timer>
                                 </div>
-                                <div ng-show="activeParty.expiredDate.getTime() < today.getTime()">
-                                    <span>便當團已到期！</span>
+                                <div 
+                                  ng-show="activeParty.expiredDate.getTime() < today.getTime()"
+                                  class="label label-danger">
+                                    <span>已到期</span>
                                 </div>
                             </div>
 
@@ -202,7 +211,7 @@
                                                         <th>備註</th>
                                                     </tr>
                                                 </thead>
-                                                <tr ng-repeat="orderResult in activePartyResult.orderResults | availableResultFilter">
+                                                <tr ng-repeat="orderResult in activePartyResult.orderResults | orderBy: 'product' | availableResultFilter">
                                                     <td>{{ orderResult.product }}</td>
                                                     <td>{{ orderResult.price | currency }}</td>
                                                     <td>{{ orderResult.users.length | emptyCountFilter }}</td>
@@ -211,7 +220,7 @@
                                                         <ul>
                                                             <li ng-repeat="user in orderResult.users">
                                                                 <p ng-show="user.note !== ''">
-                                                                    {{ user.name }}：{{ user.note }}
+                                                                    <strong>{{ user.name }}</strong>：{{ user.note }}
                                                                 </p>
                                                             </li>
                                                         </ul>
@@ -259,7 +268,7 @@
                                                 <a href="" ng-click="clickOrder(orderSummary)">
                                                     {{ orderSummary.product }}
                                                     <span ng-show="orderSummary.comments > 0" class="badge">{{ orderSummary.comments }}</span>
-                                                    <span ng-show="orderSummary.newProduct" class="badge">new</span>
+                                                    <span ng-show="orderSummary.newProduct" title="還未添加到店家！" class="badge">new</span>
                                                 </a>
                                             </td>
                                             <td>{{ orderSummary.price | currency }}</td>
@@ -287,7 +296,7 @@
                         </div>
 
                         <!-- ready to order -->
-                        <div class="row" ng-show="activeParty.available(today)">
+                        <div class="row" ng-show="activeParty.available(today)" class="ready-to-order">
                             <form name="orderForm" ng-submit="inputOrder.submitOrder()">
                                 <!-- ready to order -->
                                 <div class="col-md-10">
@@ -305,13 +314,28 @@
                                         <label>備註：</label>
                                         <input type="text" name="inputNote" placeholder="如有特殊需求可在此說明" ng-model="inputOrder.note" class="form-control">
                                     </div>
+                                    
+                                    <div>
+                                        <small>
+                                            <p>小提醒：</p>
+                                            <ol>
+                                                <li>訂購後不會直接扣款。</li>
+                                                <li>便當團截止前，訂單都可以取消。</li>
+                                                <li>飲料的糖、冰塊等額外需求，直接加在備註即可。</li>
+                                            </ol>
+                                        </small>
+                                    </div>
                                 </div>
 
                                 <div class="col-md-2">
                                     <!-- ready to order -->
                                     <div class="form-group">
                                         <!-- submission -->
-                                        <input ng-disabled="(inputOrder.productName == '') || (inputOrder.price == 0)" type="submit" id="submit" value="訂購" class="btn btn-success btn-lg btn-block" title="在結算之前，不會扣款！" />
+                                        <input 
+                                          ng-disabled="(inputOrder.productName == '') || (inputOrder.price == 0)" 
+                                          type="submit" id="submit" value="訂購" 
+                                          class="btn btn-success btn-lg btn-block" 
+                                          title="在結算之前，不會扣款！" />
                                     </div>
                                 </div>
                             </form>

@@ -34,10 +34,16 @@
                             <th>儲值</th>
                         </tr>
                         
+                        <!-- total -->
+                        <tr>
+                            <td><strong>Total</strong></td>
+                            <td><strong>{{ getTotalMoney(usersList) | currency }}</strong></td>
+                            <td></td>
+                        </tr>
+                        
                         <tr 
-                        ng-repeat="user in usersList | orderBy:'name' | userFilter:userFilterValue"
-                        ng-class="{'danger': user.money < 0, 'warning': user.money < 100 && user.money >= 0}"
-                        >
+                          ng-repeat="user in usersList | orderBy:'name' | userFilter:userFilterValue"
+                          ng-class="{'danger': user.money < 0, 'warning': user.money < 100 && user.money >= 0}">
                             <td>{{ user.name }}</td>
                             <td>{{ user.money | currency }}</td>
                             <td>

@@ -1,3 +1,12 @@
+
+function getTotalMoney(usersList) {
+    var total = 0;
+    usersList.forEach(function (user) {
+        total = total + user.money;
+    });
+    return total;
+}
+
 app
 
 .controller('rechargeController', function ($scope, $http, userInfoService) {
@@ -28,6 +37,9 @@ app
      *  }
      */
     $scope.usersList = [];
+    
+    $scope.getTotalMoney = getTotalMoney;
+    
     function submitRecharge() {
         var curUser = this;
         if (confirm('確定幫 ' + curUser.name + ' 儲值 ' + curUser.inputAmount + ' 元 ?')) {
