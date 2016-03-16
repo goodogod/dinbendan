@@ -30,9 +30,18 @@
             
             <!-- week-bar: 1 2 2 2 2 2 1 -->
             <div class="row">
-                <ul class="nav nav-tabs">
-                    <li role="presentation" ng-repeat="day in daysInWeek" ng-class="{ active: $index == todayDay }">
-                        <a href="javascript:void(0)" ng-click="clickDate(day)">{{day | date: 'MM/dd EEE'}}</a>
+                <ul class="nav nav-tabs nav-justified">
+                    <li 
+                      ng-repeat="day in daysInWeek"
+                      ng-class="{ active: $index == todayDay }"
+                      role="presentation">
+                        <a 
+                          href="javascript:void(0)" 
+                          ng-click="clickDate(day)">
+                              <strong>
+                                  {{ day | weekDayFilter }}
+                              </strong>
+                        </a>
                     </li>
                 </ul>
             </div>

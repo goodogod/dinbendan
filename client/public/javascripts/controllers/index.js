@@ -887,4 +887,39 @@ app
     }
 })
 
+.filter('weekDayFilter', function () {
+    return function (day) {
+        var weekStr = '';
+        switch (day.getDay()) {
+            case 0:
+                weekStr = '週日';
+                break;
+            case 1:
+                weekStr = '週一';
+                break;
+            case 2:
+                weekStr = '週二';
+                break;
+            case 3:
+                weekStr = '週三';
+                break;
+            case 4:
+                weekStr = '週四';
+                break;
+            case 5:
+                weekStr = '週五';
+                break;
+            case 6:
+                weekStr = '週六';
+                break;
+            default:
+                console.log('Weekday code error: ' + day.getDay());
+        }
+        var mon = day.getMonth() + 1;
+        return mon + '/' + day.getDate() + ' ' + weekStr;
+    }
+})
+
+
+
 ;
