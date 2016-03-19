@@ -9,4 +9,4 @@ $(document).ready(function() {
 
 
 // create angular module
-var app = angular.module('main', ['timer', 'angular-loading-bar']);
+var app = angular.module('main', ['timer', 'angular-loading-bar', 'ui.bootstrap.datetimepicker']);

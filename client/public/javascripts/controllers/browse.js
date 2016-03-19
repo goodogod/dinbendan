@@ -319,8 +319,8 @@ app
         
         // todo: generate default party name; create_date; expired_date
         if ($scope.partyCreationFormVisible) {
-            // Default party name: yyyy-MM-dd store name
-            $scope.newParty.name = getDateString(now) + ' ' + $scope.selectStore.name;
+            // Default party name: store name
+            $scope.newParty.name = $scope.selectStore.name;
         }
     }
     $scope.onClickPartyCreationCancel = function () {

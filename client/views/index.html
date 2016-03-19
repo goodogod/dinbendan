@@ -10,6 +10,7 @@
     
     <!-- 3rd party styles -->
     <link href="stylesheets/loading-bar.min.css" rel="stylesheet" media="screen">
+    <link href="bower_components/angular-bootstrap-datetimepicker/src/css/datetimepicker.css" rel="stylesheet" media="screen">
     
     <link href="stylesheets/style.css" rel="stylesheet" media="screen">
     <link href="stylesheets/index.css" rel="stylesheet" media="screen">
@@ -31,6 +32,25 @@
             <!-- week-bar: 1 2 2 2 2 2 1 -->
             <div class="row">
                 <ul class="nav nav-tabs nav-justified">
+                    <li>
+                        <a  
+                          class="dropdown-toggle" 
+                          id="dropdown1" 
+                          role="button" 
+                          data-toggle="dropdown" 
+                          data-target="#" 
+                          href="#">
+                            <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                            <strong>跳到某天</strong>
+                        </a>
+                        <ul class="dropdown-menu" role="menu">
+                            <datetimepicker 
+                                data-ng-model="data.dateDropDownLink"
+                                data-on-set-time="clickDate(newDate)" 
+                                data-datetimepicker-config="{ dropdownSelector: '#dropdown1', minView: 'day' }"/>
+                        </ul>
+                    </li>
+                    
                     <li 
                       ng-repeat="day in daysInWeek"
                       ng-class="{ active: $index == todayDay }"
@@ -43,7 +63,13 @@
                               </strong>
                         </a>
                     </li>
+                    
+                    
                 </ul>
+
+
+                
+                
             </div>
 
             <!-- party and orders info -->
@@ -58,7 +84,7 @@
                     <div class="dropdown parties-list" ng-show="todayParties.length > 0">
                         <button class="btn btn-default btn-block dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true"
                         aria-expanded="true">
-                            {{ activeParty.name }}
+                            {{activeParty.expiredDate | date: 'yyyy-MM-dd' }} {{ activeParty.name }}
                             <span class="caret"></span>
                         </button>
                         <ul class="dropdown-menu btn-block" aria-labelledby="dropdownMenu1">
@@ -83,7 +109,7 @@
                                         這天截止
                                     </span>
                                     
-                                    {{todayParty.name}}
+                                    {{activeParty.expiredDate | date: 'yyyy-MM-dd' }} {{todayParty.name}}
                                 </a>
                             </li>
                         </ul>
@@ -369,6 +395,8 @@
     <script type="text/javascript" src="javascripts/humanize-duration.js"></script>
     <script type="text/javascript" src="javascripts/angular-timer.min.js"></script>
     <script type="text/javascript" src="javascripts/loading-bar.min.js"></script>
+    <script type="text/javascript" src="bower_components/angular-bootstrap-datetimepicker/src/js/datetimepicker.js"></script>
+    <script type="text/javascript" src="bower_components/angular-bootstrap-datetimepicker/src/js/datetimepicker.templates.js"></script>
 
     <!-- user scripts -->
     <script type="text/javascript" src="javascripts/cookies.js"></script>
