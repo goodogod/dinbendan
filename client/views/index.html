@@ -117,9 +117,18 @@
                         <!-- span class="glyphicons glyphicons-edit"></span -->
                     </div>
                     <div>
-                        <h4><strong>店家：</strong>{{activeStore.name}}</h4>
-                        <p><strong>開始時間：</strong>{{activeParty.createDate | date: 'yyyy-MM-dd HH:mm:ss' }}</p>
-                        <p><strong>結束時間：</strong>{{activeParty.expiredDate | date: 'yyyy-MM-dd HH:mm:ss' }}</p>
+                        <h4>
+                            <span class="glyphicon glyphicon-cutlery" aria-hidden="true"></span>
+                            <strong>店家：</strong>{{activeStore.name}}
+                        </h4>
+                        <p>
+                            <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
+                            <strong>開始時間：</strong>{{activeParty.createDate | date: 'yyyy-MM-dd HH:mm:ss' }}
+                        </p>
+                        <p>
+                            <span class="glyphicon glyphicon-chevron-up" aria-hidden="true"></span>
+                            <strong>結束時間：</strong>{{activeParty.expiredDate | date: 'yyyy-MM-dd HH:mm:ss' }}
+                        </p>
                         
                     </div>
                     
@@ -137,6 +146,7 @@
                             <!-- p>Product Info</p -->
                             <!-- product name -->
                             <h5>
+                                <span class="glyphicon glyphicon-inbox" aria-hidden="true"></span>
                                 <strong>學名：</strong>{{selectOrderSummary.product}}
                                 <button ng-show="userInfo.role >=1 && selectOrderSummary.product_id < 0" ng-click="selectOrderSummary.addProduct()" type="button" class="btn btn-default" aria-label="Add product" title="目前還未建檔！點擊新增">
                                     <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
@@ -144,12 +154,18 @@
                             </h5>
 
                             <!-- product price -->
-                            <h5><strong>售價：</strong>{{selectOrderSummary.price | currency}}</h5>
+                            <h5>
+                                <span class="glyphicon glyphicon-usd" aria-hidden="true"></span>
+                                <strong>售價：</strong>{{selectOrderSummary.price | currency}}
+                            </h5>
 
                             <!-- comments list -->
                             
                             <div ng-show="selectProductComments.length > 0" class="comment-list">
-                                <h5><strong>評論：</strong></h5>
+                                <h5>
+                                    <span class="glyphicon glyphicon-comment" aria-hidden="true"></span>
+                                    <strong>評論：</strong>
+                                </h5>
                                 <ul>
                                     <li ng-repeat="comment in selectProductComments">
                                         <div class="panel panel-default box-shadow--2dp">
@@ -157,7 +173,17 @@
                                                 <span>
                                                     <a href="">{{comment.user_name}}</a>
                                                 </span>
-                                                <span> 分數：{{comment.stars}}</span>
+                                                <span>
+                                                    <span 
+                                                      ng-repeat="n in range(comment.stars) track by $index"
+                                                      class="glyphicon glyphicon-star" aria-hidden="true">
+                                                    </span> 
+                                                    <span 
+                                                      ng-repeat="n in range(5 - comment.stars) track by $index"
+                                                      class="glyphicon glyphicon-star-empty" aria-hidden="true">
+                                                    </span> 
+                                                    
+                                                </span>
                                                 <span class="pull-right" ng-attr-title="{{ comment.date | date: 'yyyy-MM-dd HH:mm:ss' }}">
                                                     {{ comment.date | date: 'MM/dd' }}
                                                 </span>
@@ -195,8 +221,10 @@
                                   ng-show="activeParty != null" 
                                   ng-class="{ 'btn-success': !activeParty.ready, 'btn-default': activeParty.ready }"
                                   class="btn pull-right show-result-btn" 
-                                  type="button" data-toggle="modal">
-                                    結算
+                                  type="button" data-toggle="modal"
+                                  title="產生訂購清單，方便聯絡店家！">
+                                      <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
+                                      結算
                                 </button>
                             </div>
 
@@ -289,10 +317,13 @@
                             <!-- 已扣款的 party 不需要限制 table 高度 -->
                             <div ng-class="{ 'table-container': !activeParty.ready }" class="orders-list panel panel-default">
                                 <!-- table -->
-                                <table class="table table-hover ">
+                                <table class="table table-hover">
                                     <thead>
                                         <tr>
-                                            <th>吃什麼</th>
+                                            <th>
+                                                吃什麼
+                                                <span ng-show="productFilterValue != ''" class="glyphicon glyphicon-filter" aria-hidden="true"></span>
+                                            </th>
                                             <th>價錢</th>
                                             <th>誰訂了</th>
                                         </tr>
@@ -370,7 +401,7 @@
                                           ng-disabled="(inputOrder.productName == '') || (inputOrder.price == 0)" 
                                           type="submit" id="submit" value="訂購" 
                                           class="btn btn-success btn-lg btn-block" 
-                                          title="在結算之前，不會扣款！" />
+                                          title="在結算之前，不會扣款！">
                                     </div>
                                 </div>
                             </form>

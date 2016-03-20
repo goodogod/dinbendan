@@ -161,6 +161,39 @@ var browse_path = path.join(__dirname, '..', '..', 'client', 'views', 'browse.ht
 var header_path = path.join(__dirname, '..', '..', 'client', 'views', 'header.html');
 var file_up_path = path.join(__dirname, '..', '..', 'client', 'views', 'file-upload.html');
 var recharge_path = path.join(__dirname, '..', '..', 'client', 'views', 'recharge.html');
+var user_path = path.join(__dirname, '..', '..', 'client', 'views', 'user.html');
+
+var pathMap = {
+    '/': index_path,
+    '/browse': browse_path,
+    '/header': header_path,
+    '/file-upload': file_up_path,
+    '/recharge': recharge_path,
+    '/user': user_path
+};
+
+/*
+for (var path in pathMap) {
+    router.get(path, function(req, res, next) {
+        var token = req.cookies ? req.cookies.token : undefined;
+        if (token) {
+            // verifies secret and checks exp
+            jwt.verify(token, secretString, function(err, decoded) {
+                if (err) {
+                    res.redirect('/login');
+                }
+                else {
+                    res.sendFile(pathMap[path]);
+                }
+            })
+        }
+        else {
+            res.redirect('/login');
+        }
+    });
+}
+*/
+
 
 // page navigation
 router.get('/', function(req, res, next) {
@@ -254,6 +287,23 @@ router.get('/recharge', function(req, res, next) {
     }
 });
 
+router.get('/user', function(req, res, next) {
+    var token = req.cookies ? req.cookies.token : undefined;
+    if (token) {
+        // verifies secret and checks exp
+        jwt.verify(token, secretString, function(err, decoded) {
+            if (err) {
+                res.redirect('/login');
+            }
+            else {
+                res.sendFile(user_path);
+            }
+        })
+    }
+    else {
+        res.redirect('/login');
+    }
+});
 
 router.get('/login', function (req, res, next) {
     res.sendFile(login_path);
@@ -447,7 +497,7 @@ router.get('/api/v1/users', function(req, res) {
  *   message: string
  * }
  */
-/*
+
 var PASSWORD_LEN = 5;
 router.put('/api/v1/user/:user_id/password', function (req, res) {
     var uiUserID = req.params.user_id;
@@ -509,7 +559,7 @@ router.put('/api/v1/user/:user_id/password', function (req, res) {
         });
     });
 });
-*/
+
 
 /*
  * path: /api/v1/user/recharge

@@ -837,6 +837,10 @@ app
     
     $scope.orderResultFilterValue = '';
     
+    $scope.range = function(n) {
+        return new Array(n);
+    };
+    
     console.log('可以到 https://github.com/goodogod/dinbendan 看 source code 哦 ^.<');
 })
 

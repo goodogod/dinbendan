@@ -125,6 +125,7 @@
                         <!-- img ng-src="{{ selectStore.image || '//:0' }} " alt="Description " class="img-thumbnail " / -->
                         <div class="image-upload " ng-show="userInfo.role>= 1">
                             <button type="button " class="btn btn-default btn-block" data-toggle="modal" data-target="#myModal">
+                                <span class="glyphicon glyphicon-upload" aria-hidden="true"></span>
                                 上傳圖片
                             </button>
                             <div class="modal fade " id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
@@ -151,15 +152,41 @@
 
                     <div class="store-info-view">
                         <div ng-show="userInfo.role == 0">
-                            <p>名稱：{{selectStore.name}}</p>
-                            <p>電話：{{selectStore.phone_number}}</p>
-                            <p>滿多少外送：{{selectStore.min_spending}}</p>
+                            <p>
+                                <span class="glyphicon glyphicon-inbox" aria-hidden="true"></span>
+                                名稱：{{selectStore.name}}
+                            </p>
+                            <p>
+                                <span class="glyphicon glyphicon-phone" aria-hidden="true"></span>
+                                電話：{{selectStore.phone_number}}
+                            </p>
+                            <p>
+                                <span class="glyphicon glyphicon-usd" aria-hidden="true"></span>
+                                滿多少外送：{{selectStore.min_spending}}
+                            </p>
                         </div>
                         
                         <div ng-show="userInfo.role >= 1">
-                            <p><strong>名稱：</strong><a href="#" editable-text="selectStore.newName" onbeforesave="onUpdateStoreName($data)" buttons="no">{{selectStore.newName || 'empty'}}</a></p>
-                            <p><strong>電話：</strong><a href="#" editable-text="selectStore.newPhoneNumber" onbeforesave="onUpdateStorePhoneNumber($data)" buttons="no">{{selectStore.newPhoneNumber || 'empty'}}</a></p>
-                            <p><strong>滿多少外送：</strong><a href="#" editable-text="selectStore.newMinSpending" onbeforesave="onUpdateStoreMinSpending($data)" buttons="no">{{selectStore.newMinSpending || 'empty'}}</a></p>
+                            <p>
+                                <strong>
+                                    <span class="glyphicon glyphicon-inbox" aria-hidden="true"></span>
+                                    名稱：
+                                </strong>
+                                <a href="#" editable-text="selectStore.newName" onbeforesave="onUpdateStoreName($data)" buttons="no">{{selectStore.newName || 'empty'}}</a>
+                            </p>
+                            <p>
+                                <strong>
+                                    <span class="glyphicon glyphicon-phone" aria-hidden="true"></span>
+                                    電話：
+                                </strong>
+                                <a href="#" editable-text="selectStore.newPhoneNumber" onbeforesave="onUpdateStorePhoneNumber($data)" buttons="no">{{selectStore.newPhoneNumber || 'empty'}}</a>
+                            </p>
+                            <p>
+                                <strong>
+                                    <span class="glyphicon glyphicon-usd" aria-hidden="true"></span>
+                                    滿多少外送：
+                                </strong>
+                                <a href="#" editable-text="selectStore.newMinSpending" onbeforesave="onUpdateStoreMinSpending($data)" buttons="no">{{selectStore.newMinSpending || 'empty'}}</a></p>
                         </div>
                     </div>
                     
