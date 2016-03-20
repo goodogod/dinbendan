@@ -22,14 +22,33 @@ function UpdateStore($http, token, storeID, field, value, successCallback) {
     });
 }
 
+function UpdateProduct($http, token, productID, field, value, successCallback) {
+    var data = {};
+    data[field] = value;
+    data['token'] = token;
+    
+    return $http.put('/api/v1/product/' + productID, data)
+    .then(function (res) {
+        successCallback();
+        if (res.status == 201) {
+            return true;
+        } else {
+            return res.data.message;
+        }
+    }, function (res) {
+        return res.data.message;
+    });
+    
+}
+
 /* text validation, xeditable compatible */
-function validateText(inputText, orginText, fieldCaption, updateCallback) {
+function validateText(inputText, orginText, fieldCaption, updateCallback, args) {
     if (inputText === orginText) {
         return false;
     } else if (inputText === '') {
         return fieldCaption + '不能為空！';
     } else if (confirm('確定修改' + fieldCaption + '為 ' + inputText + '？')) {
-        return updateCallback;
+        return updateCallback.apply(this, args);
     } else {
         return false;
     }
@@ -101,30 +120,71 @@ app
     };
     
     $scope.onUpdateStoreName = function (data) {
-        var updateFunc = UpdateStore($http, token, $scope.selectStore.id, 'name', data, updateStoresList);
+        var args = [];
+        args.push($http);
+        args.push(token);
+        args.push($scope.selectStore.id);
+        args.push('name');
+        args.push(data);
+        args.push(updateStoresList);
+        var updateFunc = UpdateStore;
         return validateText(
             data.trim(), 
             $scope.selectStore.name.trim(), 
             '商品',
-            updateFunc);
+            updateFunc,
+            args);
     };
     
     $scope.onUpdateStorePhoneNumber = function (data) {
-        var updateFunc = UpdateStore($http, token, $scope.selectStore.id, 'phone_number', data, updateStoresList);
+        var args = [];
+        args.push($http);
+        args.push(token);
+        args.push($scope.selectStore.id);
+        args.push('phone_number');
+        args.push(data);
+        args.push(updateStoresList);
+        var updateFunc = UpdateStore;
         return validateText(
             data.trim(), 
             $scope.selectStore.phone_number.trim(), 
             '電話',
-            updateFunc);
+            updateFunc,
+            args);
     };
     
     $scope.onUpdateStoreMinSpending = function (data) {
-        var updateFunc = UpdateStore($http, token, $scope.selectStore.id, 'min_spending', data, updateStoresList);
+        var args = [];
+        args.push($http);
+        args.push(token);
+        args.push($scope.selectStore.id);
+        args.push('min_spending');
+        args.push(data);
+        args.push(updateStoresList);
+        var updateFunc = UpdateStore;
         return validateText(
             data.trim(), 
             $scope.selectStore.min_spending.trim(), 
             '滿多少外送',
-            updateFunc);
+            updateFunc,
+            args);
+    };
+    
+    $scope.onUpdateProductPrice = function (data, product) {
+        var args = [];
+        args.push($http);
+        args.push(token);
+        args.push(product.product_id);
+        args.push('price');
+        args.push(data);
+        args.push(updateProductsList);
+        var updateFunc = UpdateProduct;
+        return validateText(
+            data.trim(), 
+            product.price.trim(), 
+            '售價',
+            updateFunc,
+            args);
     };
     
     /*
@@ -170,7 +230,13 @@ app
     }
     function updateProductsList() {
         clearProducts();
-        getProductsList($http, token, $scope.selectStore.id, $scope.productsList);
+        getProductsList($http, token, $scope.selectStore.id, $scope.productsList, function (products) {
+            // Initialize new fields.
+            products.forEach(function (product, index) {
+                product.newName = product.product_name;
+                product.newPrice = product.price;
+            });
+        });
     }
     /* Event: click store component. */
     $scope.clickStore = function (store) {

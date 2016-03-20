@@ -238,11 +238,22 @@
                                     <tr ng-repeat="product in productsList | productFilter:productFilterValue" ng-class="{active: product.product_id == selectProduct.product_id} ">
                                         <td>
                                             <a href=" " ng-click="clickProduct(product)">
-                                                {{product.product_name}}
+                                                {{ product.product_name }}
                                                 <span ng-show="product.comments > 0" class="badge">{{ product.comments }}</span>
                                             </a>
                                         </td>
-                                        <td>{{product.price | currency}}</td>
+                                        <td>
+                                            <a
+                                              ng-if="userInfo.role >= 1" 
+                                              href="#" 
+                                              editable-text="product.newPrice" 
+                                              onbeforesave="onUpdateProductPrice($data, product)" 
+                                              buttons="no">
+                                               {{ product.newPrice || 'empty' | currency }}
+                                            </a>
+                                            
+                                            <p ng-if="userInfo.role == 0"> {{ product.price | currency }} </p>
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>

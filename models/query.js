@@ -132,6 +132,9 @@ module.exports.insertRow_F4 =
 module.exports.deleteRow_F3 = 
     'DELETE FROM {0} WHERE {1} = {2};';
 
+module.exports.updateRow_F4 =
+    'UPDATE {0} SET {1} WHERE {2} = {3};';
+
 /*------------------------------------------------------*/
 /*
  * Tools.

@@ -26,6 +26,10 @@ if (!String.prototype.format) {
 }
 /* ex: "{0} is dead, but {1} is alive! {0} {2}".format("ASP", "ASP.NET") */
 
+function isValidFloat(float) {
+    return !isNaN(float);
+}
+
 /*
  * Return UUID name.
  */
@@ -1455,12 +1459,6 @@ router.put('/api/v1/store/:store_id', function (req, res) {
                 res.send(err);
                 done();
                 return;
-                /*
-                return res.json({
-                    success: false,
-                    message: err
-                });
-                */
             }
             
             if (imagePath !== undefined) {
@@ -1917,7 +1915,84 @@ router.post('/api/v1/product', function (req, res) {
             }
         });
     });
-})
+});
+
+/*
+ * Purpose: modify product.
+ * Method: PUT
+ * req: {
+ *   product_id,
+ *   name (optional)
+ *   price (optional)
+ * }
+ * 
+ * req:
+ *   201: Modify OK.
+ *   400: invalid request.
+ *   404: product not found.
+ *   500: internal error.
+ */
+router.put('/api/v1/product/:product_id', function (req, res) {
+    var uiProductID = req.params.product_id;
+    var uiName = req.body.name;
+    var uiPrice = req.body.price;
+    
+    var cols = [];
+    var vals = [];
+    if (!uiProductID) {
+        res.status(status_code.CLI_ERR_BAD_REQ);
+        res.send({ message: 'Product ID is missing.' });
+        return;
+    }
+    
+    if (uiName) {
+        cols.push('name');
+        vals.push(uiName);
+    }
+    
+    if (uiPrice) {
+        if (isValidFloat(uiPrice)) {
+            if (uiPrice > 0) {
+                cols.push('price');
+                vals.push(uiPrice);
+            } else {
+                res.status(status_code.CLI_ERR_BAD_REQ);
+                res.send({ message: 'Price must be greater than 0.' });
+                return;
+            }
+        } else {
+            res.status(status_code.CLI_ERR_BAD_REQ);
+            res.send({ message: 'Price is invalid.' });
+            return;
+        }
+    }
+    
+    if (cols.length > 0) {
+        pg.connect(connectionString, function(err, client, done) {
+            if (err) {
+                res.status(status_code.CLI_ERR_BAD_REQ);
+                res.send(err);
+                done();
+                return;
+            }
+            
+            var queryString = sq.updateRow_F4.format('products',
+                                                     sq.arrayToSQLUpdateString(cols, vals),
+                                                     'product_id',
+                                                     uiProductID);
+            //console.log(queryString);
+            var query = client.query(queryString);
+    
+            // After all data is returned, close connection and return results
+            query.on('end', function() {
+                done();
+                res.status(status_code.SUCC_CREATED);
+                res.send({ message: 'Update product OK !' });
+                return;
+            });
+        });
+    }
+});
 
 /*
  * purpose: modify product comment.

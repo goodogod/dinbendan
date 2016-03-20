@@ -46,9 +46,10 @@ function getStoresList($http, token, outStoresList, successCallback) {
 
 /*
  * Get products list by storeID.
+ * @Param after: function (list)
  * Return: [ { product_id, product_name, store_id, price }, { ... }, ... ]
  */
-function getProductsList($http, token, storeID, outProductsList) {
+function getProductsList($http, token, storeID, outProductsList, after) {
     
     var req = {
         method: 'GET',
@@ -61,6 +62,10 @@ function getProductsList($http, token, storeID, outProductsList) {
         if (response.success) {
             for (var i = 0; i < response.products.length; i++) {
                 outProductsList.push(response.products[i]);
+            }
+            
+            if (after) {
+                after(outProductsList);
             }
         }
     });
