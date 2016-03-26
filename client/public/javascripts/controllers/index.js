@@ -720,9 +720,28 @@ app
             // Create $scope.todayParties
             $scope.todayParties.length = 0;
             response.parties.forEach(function (party) {
+                /* 
+                  目的: 顯示有關今天的 party.
+                  ex: 
+                    party.createDate = '2016-3-1 09:10:10'
+                    party.expiredDate = '2016-3-3 11:00:00'
+                    paramDate = 2016-3-2
+                    則判斷依據為:
+                    '2016-3-1 00:00:00' <= paramDate <= '2016-3-4 00:00:00'
+                    注意 expiredDate 刻意 date + 1.
+                */
+                var partyCreateDate = new Date(party.createDate);
+                partyCreateDate.setHours(0);
+                partyCreateDate.setMinutes(0);
+                partyCreateDate.setSeconds(0);
+                var partyExpiredDate = new Date(party.expiredDate);
+                partyExpiredDate.setHours(0);
+                partyExpiredDate.setMinutes(0);
+                partyExpiredDate.setSeconds(0);
+                partyExpiredDate.setDate(partyExpiredDate.getDate() + 1);
                 
-                if (party.createDate.getDate() <= $scope.paramDate.getDate() 
-                 && $scope.paramDate.getDate() <= party.expiredDate.getDate()) {
+                if (partyCreateDate <= $scope.paramDate
+                 && $scope.paramDate <= partyExpiredDate) {
                     $scope.todayParties.push(party);
                 }
             });

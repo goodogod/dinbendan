@@ -721,8 +721,6 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
     //console.log('queryOrganization: ' + queryOrganization);
 
     var results = [];
-    // todo: get from user info
-    //var organization = ;
     pg.connect(connectionString, function(err, client, done) {
         var currMonth = new Date(uiYear, uiMonth, 0);
         var lastDay = currMonth.getDate();
@@ -743,12 +741,12 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
             ' (parties.organization_id = {0}'+
             ' AND parties.creator_id = users.user_id'+
             ' AND parties.store_id = stores.store_id'+
-            ' AND \'{1}-{2}-1 00:00:00\' <= parties.create_date'+
-            ' AND parties.expired_date <= \'{1}-{2}-{3} 24:00:00\')'+
+            ' AND parties.expired_date >= \'{1}-{2}-1 00:00:00\''+
+            ' AND \'{1}-{2}-{3} 24:00:00\' >= parties.create_date)'+
             ' GROUP BY'+
             ' parties.name, parties.party_id, parties.creator_id, parties.store_id, users.name, stores.name, parties.create_date, parties.expired_date, parties.ready'+
             ' ORDER BY parties.party_id ASC;';
-
+        // Hint: 排除 expired_date < start day of month AND end day of month < create_date
         queryString = queryString.format(queryOrganization, uiYear, uiMonth, lastDay);
         //console.log(queryString);
         var query = client.query(queryString);
@@ -767,7 +765,6 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
 
         // After all data is returned, close connection and return results
         query.on('end', function() {
-            //client.end();
             //console.log(results);
             done();
             return res.json({
