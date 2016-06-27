@@ -216,6 +216,18 @@
 
                             <!-- 結案鈕 -->
                             <div class="clearing">
+                                <!-- Shown as role: 2 or Party creator -->
+                                <div
+                                  ng-show="userInfo.role >= 2 || userInfo.user_id == activeParty.creator_id" 
+                                  class="dropdown pull-right">
+                                    <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                                        <span class="caret"></span>
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+                                        <li><a href="#" ng-click="onDeleteParty(activeParty)">刪除</a></li>
+                                    </ul>
+                                </div>
+
                                 <button 
                                   ng-click="activePartyResult.onShow()" 
                                   ng-show="activeParty != null" 

@@ -62,10 +62,10 @@ module.exports.getStoreInfo_F1 =
  * Get party info.
  * Parameter:
  *   0: party ID.
- * Return: name, organization_id, creator_id, store_id, create_date, expired_date, ready
+ * Return: name, organization_id, creator_id, store_id, create_date, expired_date, ready, deleted
  */
 module.exports.getPartyInfo_F1 = 
-    'SELECT name, organization_id, creator_id, store_id, TO_CHAR(create_date, \'yyyy-mm-dd hh24:mi:ss\') AS create_date, TO_CHAR(expired_date, \'yyyy-mm-dd hh24:mi:ss\') AS expired_date, ready FROM parties WHERE party_id = {0};';
+    'SELECT name, organization_id, creator_id, store_id, TO_CHAR(create_date, \'yyyy-mm-dd hh24:mi:ss\') AS create_date, TO_CHAR(expired_date, \'yyyy-mm-dd hh24:mi:ss\') AS expired_date, ready, deleted FROM parties WHERE party_id = {0};';
 
 /*
  * Get product comments.

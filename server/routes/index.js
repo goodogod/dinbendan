@@ -686,6 +686,7 @@ router.post('/api/v1/party', function (req, res) {
 
 /**************************************
   purpose: 回傳指定時間的 parties.
+  hint: 不會回傳 deleted = true 的 parties.
   path: /api/v1/parties/:year/:month
   query string: token, organizationID
   method: GET
@@ -743,6 +744,7 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
             ' AND parties.store_id = stores.store_id'+
             ' AND parties.expired_date >= \'{1}-{2}-1 00:00:00\''+
             ' AND \'{1}-{2}-{3} 24:00:00\' >= parties.create_date)'+
+            ' AND parties.deleted = FALSE'+
             ' GROUP BY'+
             ' parties.name, parties.party_id, parties.creator_id, parties.store_id, users.name, stores.name, parties.create_date, parties.expired_date, parties.ready'+
             ' ORDER BY parties.party_id ASC;';
@@ -842,7 +844,8 @@ router.get('/api/v1/stores', function (req, res) {
     store_id: integer,
     create_date: string,
     expired_date: string,
-    ready: boolean
+    ready: boolean,
+    deleted: boolean
   }
 */
 router.get('/api/v1/party/:party_id', function (req, res) {
@@ -869,7 +872,8 @@ router.get('/api/v1/party/:party_id', function (req, res) {
                 creator_id:      parseInt(row.creator_id),
                 create_date:     row.create_date,
                 expired_date:    row.expired_date,
-                ready:           row.ready
+                ready:           row.ready,
+                deleted:         row.deleted
             });
         });
 
@@ -968,6 +972,55 @@ router.put('/api/v1/party/:party_id/ready', function (req, res) {
             }
         });
     });
+});
+
+/*
+ * purpose: set delete = true to a party.
+ * path: /api/v1/party/:party_id/delete
+ * method: PUT
+ * body: {
+ *   deleted: boolean
+ * }
+ */
+router.put('/api/v1/party/:party_id/delete', function (req, res) {
+    var uiPartyID = req.params.party_id;
+    if (!uiPartyID) {
+        res.status(status_code.CLI_ERR_BAD_REQ);
+        res.send({ message: 'party_id is missing.' });
+        return;
+    }
+
+    var uiDeleted = req.body.deleted;
+    if (!uiDeleted) {
+        res.status(status_code.CLI_ERR_BAD_REQ);
+        res.send({ message: 'deleted is missing.' });
+        return;
+    }
+
+    pg.connect(connectionString, function(err, client, done) {
+        if (err) {
+            res.status(status_code.CLI_ERR_BAD_REQ);
+            res.send(err);
+            done();
+            return;
+        }
+        
+        var queryString = sq.updateRow_F4.format('parties',
+                                                 'deleted = true',
+                                                 'party_id',
+                                                 uiPartyID);
+        //console.log(queryString);
+        var query = client.query(queryString);
+
+        // After all data is returned, close connection and return results
+        query.on('end', function() {
+            done();
+            res.status(status_code.SUCC_OK);
+            res.send({ message: 'Delete party OK !' });
+            return;
+        });
+    });
+
 });
 
 /*

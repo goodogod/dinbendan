@@ -455,6 +455,27 @@ app
         }
     };
 
+    $scope.onDeleteParty = function (party) {
+        if (confirm('真的要刪除便當團: 『' + party.name + '』 ？')) {
+            var req = {
+                method: 'PUT',
+                url: '/api/v1/party/' + party.party_id + '/delete',
+                data: {
+                    deleted: 'TRUE'
+                },
+                params: {
+                    token:          token,
+                    userID:         userID,
+                    organizationID: organizationID
+                }
+            };
+
+            $http(req).then(function (response) {
+                window.location.reload();
+            });
+        }
+    };
+
     /*******************************
     format: {
           product_id, // < 0 if product is new.
