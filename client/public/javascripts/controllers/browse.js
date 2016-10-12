@@ -104,6 +104,7 @@ app
      *   parties_count,
      *   last_expired_date, 
      * 
+     *   partiesCount: integer,
      *   newName,
      *   newPhoneNumber,
      *   newMinSpending
@@ -221,6 +222,7 @@ app
             
             $scope.storesList.forEach(function (store, index, list) {
                 // add edit field
+                store.partiesCount = parseInt(store.parties_count);
                 store.newName = store.name;
                 store.newPhoneNumber = store.phone_number;
                 store.newMinSpending = store.min_spending;

@@ -89,15 +89,15 @@
                                     </th>     
 
                                     <th>
-                                        <a href="#" ng-click="storeSortType = 'parties_count'; storeSortReverse = !storeSortReverse">
+                                        <a href="#" ng-click="storeSortType = 'partiesCount'; storeSortReverse = !storeSortReverse">
                                             開團次數
                                         </a>
                                         <span 
-                                            ng-show="storeSortType == 'parties_count' && !storeSortReverse" 
+                                            ng-show="storeSortType == 'partiesCount' && !storeSortReverse" 
                                             class="glyphicon glyphicon-arrow-up" 
                                             aria-hidden="true"></span>
                                         <span 
-                                            ng-show="storeSortType == 'parties_count' && storeSortReverse"
+                                            ng-show="storeSortType == 'partiesCount' && storeSortReverse"
                                             class="glyphicon glyphicon-arrow-down"></span>
                                     </th>
                                     <th>
@@ -115,7 +115,7 @@
                                 </tr>
                             <thead>
                             <tbody>
-                                <tr ng-repeat="store in storesList | orderBy:storeSortType:storeSortReverse | storeFilter:storeFilterValue" ng-class="{active: store.id == selectStore.id}">
+                                <tr ng-repeat="store in storesList | orderBy : storeSortType : storeSortReverse | storeFilter:storeFilterValue" ng-class="{active: store.id == selectStore.id}">
                                     <td>
                                         <a href="" ng-click="clickStore(store)">{{store.name}}</a>
                                     </td>
