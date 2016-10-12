@@ -802,7 +802,7 @@ router.get('/api/v1/parties/:year/:month', function(req, res) {
 router.get('/api/v1/stores', function (req, res) {
     var results = [];
     pg.connect(connectionString, function(err, client, done) {
-        var queryString = sq.queryStores;
+        var queryString = sq.queryStoresV2;
 
         var query = client.query(queryString);
 

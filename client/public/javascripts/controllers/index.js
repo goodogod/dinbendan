@@ -102,8 +102,9 @@ app
 
     // display today
     // 0 ~ 6
-    //var today = new Date('2015-7-13 10:00:00'); // for test
+    //var today = new Date('2016-8-31 09:00:00'); // for test
     //var queryDate = $location.search().d;
+    
     var today;
     if (getParameterByName('d')) {
         today = new Date();
@@ -119,6 +120,7 @@ app
     } else {
         today = new Date();
     }
+    
     $scope.paramDate = today;
     $scope.today = new Date();
     

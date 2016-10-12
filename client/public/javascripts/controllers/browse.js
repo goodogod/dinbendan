@@ -89,6 +89,9 @@ app
     userInfoService.update(userID, organizationID, token);
     $scope.userInfo = userInfoService;
     
+    $scope.storeSortType = 'name';
+    $scope.storeSortReverse = false;
+
     /*
      * storesList: Array
      * store: { 
@@ -98,6 +101,8 @@ app
      *   create_date, 
      *   min_spending, 
      *   image,
+     *   parties_count,
+     *   last_expired_date, 
      * 
      *   newName,
      *   newPhoneNumber,

@@ -41,6 +41,13 @@ module.exports.queryStores =
     'SELECT store_id AS id, name, phone_number, TO_CHAR(create_date, \'yyyy-mm-dd hh24:mm:ss\') AS create_date, min_spending, image FROM stores ORDER BY name;';
 
 /*
+ * Get all stores.
+ * Return: id, name, phone_number, create_date, min_spending, image, parties_count, last_expired_date
+ */
+module.exports.queryStoresV2 =
+    'select stores.store_id AS id, stores.name, stores.phone_number, TO_CHAR(stores.create_date, \'yyyy-mm-dd hh24:mm:ss\') AS create_date, min_spending, image, (select count(parties.party_id) from parties where parties.store_id = stores.store_id and parties.ready = true) as parties_count, (select max(parties.expired_date) as expired_date from parties where parties.store_id = stores.store_id and parties.ready = true) as last_expired_date from stores order by stores.store_id';
+
+/*
  * Add new store, return store_id.
  * Parameters:
  *   0: columns list.
